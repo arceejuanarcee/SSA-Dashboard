@@ -14,24 +14,29 @@ def get_kp_color(kp):
     elif kp < 5:
         return "#ffee00"
     else:
-        return "#ff4c4c"
+        return "#ff3b3b"
 
-def tile(title, image_path, key, data, color="#00e0ff"):
+def tile(title, image_path, key, data, highlight=None, color="#00e0ff"):
     img = get_base64(image_path)
 
     data_html = ""
     for k, v in data.items():
-        data_html += f"<div>{k}: {v}</div>"
+        data_html += f"<div><b>{k}</b>: {v}</div>"
+
+    highlight_html = ""
+    if highlight:
+        highlight_html = f"<div class='tile-highlight'>{highlight}</div>"
 
     st.markdown(f"""
         <style>
         .tile-container {{
             position: relative;
+            margin-bottom: 20px;
         }}
 
         .tile-{key} {{
-            height: 180px;
-            border-radius: 10px;
+            height: 200px;
+            border-radius: 12px;
             background-image: url("data:image/jpg;base64,{img}");
             background-size: cover;
             background-position: center;
@@ -42,15 +47,16 @@ def tile(title, image_path, key, data, color="#00e0ff"):
         .overlay-{key} {{
             position: absolute;
             inset: 0;
-            background: rgba(5, 15, 25, 0.75);
+            background: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.85));
         }}
 
         .tile-title {{
             position: absolute;
             bottom: 20px;
             left: 20px;
-            color: #e6f1f5;
+            color: white;
             font-size: 20px;
+            font-weight: 500;
         }}
 
         .tile-info {{
@@ -58,22 +64,38 @@ def tile(title, image_path, key, data, color="#00e0ff"):
             top: 15px;
             left: 20px;
             color: {color};
-            font-size: 14px;
+            font-size: 15px;
+        }}
+
+        .tile-highlight {{
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 28px;
+            font-weight: bold;
+            color: white;
         }}
 
         div[data-testid="stButton"] > button {{
             opacity: 0;
-            height: 180px;
+            height: 200px;
             width: 100%;
             position: absolute;
+            top: 0;
+            left: 0;
         }}
         </style>
 
         <div class="tile-container">
             <div class="tile-{key}">
                 <div class="overlay-{key}">
-                    <div class="tile-info">{data_html}</div>
-                    <div class="tile-title">{title}</div>
+                    <div class="tile-info">
+                        {data_html}
+                    </div>
+                    {highlight_html}
+                    <div class="tile-title">
+                        {title}
+                    </div>
                 </div>
             </div>
         </div>
@@ -86,7 +108,9 @@ def tile(title, image_path, key, data, color="#00e0ff"):
 def render():
 
     sw = get_kp_index()
-    kp_color = get_kp_color(sw["kp"])
+    kp = sw["kp"]
+    status = sw["status"]
+    kp_color = get_kp_color(kp)
 
     col1, col2 = st.columns(2)
 
@@ -96,10 +120,11 @@ def render():
             "graphics/space_weather.jpg",
             "space_weather",
             {
-                "Kp": sw["kp"],
-                "Condition": sw["status"]
+                "Kp Index": kp,
+                "Geomagnetic": status
             },
-            kp_color
+            highlight=f"Kp {kp}",
+            color=kp_color
         )
 
     with col2:
@@ -108,7 +133,7 @@ def render():
             "graphics/reentry.jpg",
             "reentry",
             {
-                "Object": "N/A",
+                "Object": "Pending",
                 "ETA": "Pending"
             }
         )
@@ -118,7 +143,7 @@ def render():
     with col3:
         tile(
             "CDM",
-            "graphics/cdm.png",
+            "graphics/cdm.jpg",
             "cdm",
             {
                 "Active": "N/A",
