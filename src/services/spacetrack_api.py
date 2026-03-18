@@ -10,8 +10,6 @@ def spacetrack_login(identity, password):
 
     headers = {
         "User-Agent": "Mozilla/5.0",
-        "Accept": "application/json",
-        "Content-Type": "application/x-www-form-urlencoded"
     }
 
     login_url = BASE_URL + "/ajaxauth/login"
@@ -24,19 +22,21 @@ def spacetrack_login(identity, password):
     )
 
     if resp.status_code != 200:
-        raise Exception(f"Login failed: {resp.status_code}")
+        return None, "Login failed"
 
-    # 🚨 CRITICAL: detect failed login (Space-Track returns HTML login page)
-    if "Login" in resp.text and "password" in resp.text:
-        raise Exception("Space-Track login failed (bad credentials or blocked)")
+    if "Login" in resp.text:
+        return None, "Invalid credentials or blocked"
 
-    return session
+    return session, None
 
 
 @st.cache_data(ttl=600)
 def get_active_leo_satellites_by_country(identity, password, limit=10):
     try:
-        session = spacetrack_login(identity, password)
+        session, err = spacetrack_login(identity, password)
+
+        if err:
+            return [], [], err
 
         url = (
             BASE_URL +
@@ -49,21 +49,17 @@ def get_active_leo_satellites_by_country(identity, password, limit=10):
         resp = session.get(url, timeout=30)
 
         if resp.status_code != 200:
-            raise Exception(f"Fetch failed: {resp.status_code}")
+            return [], [], f"Fetch failed: {resp.status_code}"
 
-        # 🚨 detect if Space-Track returned HTML instead of JSON
         if "<html>" in resp.text.lower():
-            raise Exception("Space-Track returned HTML (blocked or session expired)")
+            return [], [], "Blocked by Space-Track (HTML response)"
 
         data = resp.json()
 
         if not isinstance(data, list) or len(data) == 0:
-            raise Exception("No valid satellite data")
+            return [], [], "No data returned"
 
-        countries = [
-            obj.get("COUNTRY") or "UNK"
-            for obj in data
-        ]
+        countries = [obj.get("COUNTRY") or "UNK" for obj in data]
 
         counter = Counter(countries)
         top = counter.most_common(limit)
@@ -71,8 +67,7 @@ def get_active_leo_satellites_by_country(identity, password, limit=10):
         labels = [c[0] for c in top]
         values = [c[1] for c in top]
 
-        return labels, values
+        return labels, values, None
 
     except Exception as e:
-        # 🔥 DEBUG OUTPUT (VERY IMPORTANT)
-        return [], str(e)
+        return [], [], str(e)
