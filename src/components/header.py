@@ -8,6 +8,14 @@ def get_base64_image(path):
 def render_header():
     logo_base64 = get_base64_image("graphics/logo.png")
 
+    st.markdown("""
+        <style>
+        header {visibility: hidden;}
+        footer {visibility: hidden;}
+        #MainMenu {visibility: hidden;}
+        </style>
+    """, unsafe_allow_html=True)
+
     st.markdown(f"""
         <style>
         .header {{
@@ -15,27 +23,30 @@ def render_header():
             top: 0;
             left: 0;
             right: 0;
-            height: 80px;
-            background-color: #1f5f75;
+            height: 90px;
+            background: linear-gradient(90deg, #0b3d5c, #155e75);
             display: flex;
             align-items: center;
-            padding: 0 30px;
-            z-index: 1000;
+            padding: 0 40px;
+            z-index: 9999;
+            border-bottom: 2px solid #0a2c3a;
         }}
 
         .header-title {{
             color: white;
-            font-size: 26px;
+            font-size: 28px;
             font-weight: 500;
             margin-left: 20px;
+            letter-spacing: 0.5px;
         }}
 
         .logo {{
-            width: 60px;
-            height: 60px;
+            width: 65px;
+            height: 65px;
             border-radius: 50%;
             overflow: hidden;
-            border: 2px solid #0b2e3c;
+            border: 2px solid white;
+            background-color: white;
         }}
 
         .logo img {{
@@ -45,11 +56,12 @@ def render_header():
         }}
 
         .page-content {{
-            margin-top: 100px;
+            margin-top: 120px;
+            padding: 20px 40px;
         }}
 
         .stApp {{
-            background-color: #f2f2f2;
+            background-color: #e6eef2;
         }}
         </style>
 
