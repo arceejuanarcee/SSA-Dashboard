@@ -50,6 +50,8 @@ def tile(title, image_path, key):
             height: 160px;
             width: 100%;
             position: absolute;
+            top: 0;
+            left: 0;
         }}
         </style>
 
@@ -67,8 +69,23 @@ def tile(title, image_path, key):
 
 
 def render():
-    st.subheader("Geomagnetic Storm Forecast")
+    # FIX GLOBAL SPACING
+    st.markdown("""
+        <style>
+        .block-container {
+            padding-top: 1rem !important;
+            padding-bottom: 0rem;
+        }
+        </style>
+    """, unsafe_allow_html=True)
 
+    # TITLE (tight spacing)
+    st.markdown(
+        "<h3 style='margin-bottom:0.4rem;'>Geomagnetic Storm Forecast</h3>",
+        unsafe_allow_html=True
+    )
+
+    # GRAPH LAYOUT (HALF WIDTH)
     graph_col, next_graph_col = st.columns(2)
 
     with graph_col:
@@ -80,6 +97,7 @@ def render():
 
                 bars = ax.bar(days, values)
 
+                # COLOR CODING
                 for i, v in enumerate(values):
                     if v < 3:
                         bars[i].set_color("green")
@@ -92,22 +110,28 @@ def render():
 
                 ax.set_ylim(0, 9)
                 ax.set_ylabel("Kp Index", fontsize=9)
+
                 ax.tick_params(axis="x", labelsize=8)
                 ax.tick_params(axis="y", labelsize=8)
 
+                # VALUE LABELS
                 for i, v in enumerate(values):
                     ax.text(i, v + 0.15, f"{v:.1f}", ha="center", fontsize=8)
 
                 fig.tight_layout()
                 st.pyplot(fig)
+
             else:
                 st.warning("No NOAA data available")
+
         except Exception:
             st.warning("Space weather data unavailable")
 
+    # RESERVED SPACE FOR SECOND GRAPH
     with next_graph_col:
         st.empty()
 
+    # TILES SECTION
     col1, col2 = st.columns(2)
 
     with col1:
