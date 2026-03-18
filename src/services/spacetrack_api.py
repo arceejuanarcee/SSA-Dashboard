@@ -32,13 +32,11 @@ def get_active_leo_satellites_by_country(identity, password, limit=10):
         if "failed" in login_resp.text.lower():
             return [], [], "Invalid credentials"
 
-        # ✅ FIXED QUERY (NO MORE 500 ERROR)
+        # ✅ SAFE QUERY (NO COMPLEX FILTER)
         query_url = (
             BASE_URL +
             "/basicspacedata/query/class/satcat/"
             "DECAY/null/"
-            "MEAN_MOTION/11--16/"
-            "orderby/COUNTRY%20asc/"
             "format/json"
         )
 
@@ -48,17 +46,30 @@ def get_active_leo_satellites_by_country(identity, password, limit=10):
             return [], [], f"Query failed: {resp.status_code}"
 
         if "<html" in resp.text.lower():
-            return [], [], "Blocked by Space-Track (HTML returned)"
+            return [], [], "Blocked by Space-Track"
 
         data = resp.json()
 
         if not isinstance(data, list) or len(data) == 0:
             return [], [], "Empty dataset"
 
+        # ✅ FILTER IN PYTHON (RELIABLE)
+        filtered = []
+        for obj in data:
+            try:
+                mm = float(obj.get("MEAN_MOTION", 0))
+                if mm > 11:
+                    filtered.append(obj)
+            except:
+                continue
+
+        if not filtered:
+            return [], [], "No LEO satellites after filtering"
+
         # PROCESS
         countries = [
             obj.get("COUNTRY") or "UNK"
-            for obj in data
+            for obj in filtered
         ]
 
         counter = Counter(countries)
