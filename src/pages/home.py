@@ -1,31 +1,21 @@
 import streamlit as st
 import base64
-from src.services.space_weather_api import get_kp_index
+import matplotlib.pyplot as plt
+
+from src.services.space_weather_api import get_kp_index, get_kp_forecast
+
 
 def get_base64(path):
     with open(path, "rb") as f:
         return base64.b64encode(f.read()).decode()
 
-def get_kp_color(kp):
-    if kp == "N/A":
-        return "#aaaaaa"
-    if kp < 4:
-        return "#00ff88"
-    elif kp < 5:
-        return "#ffee00"
-    else:
-        return "#ff3b3b"
 
-def tile(title, image_path, key, data, highlight=None, color="#00e0ff"):
+def tile(title, image_path, key, data):
     img = get_base64(image_path)
 
     data_html = ""
     for k, v in data.items():
         data_html += f"<div><b>{k}</b>: {v}</div>"
-
-    highlight_html = ""
-    if highlight:
-        highlight_html = f"<div class='tile-highlight'>{highlight}</div>"
 
     st.markdown(f"""
         <style>
@@ -35,7 +25,7 @@ def tile(title, image_path, key, data, highlight=None, color="#00e0ff"):
         }}
 
         .tile-{key} {{
-            height: 200px;
+            height: 180px;
             border-radius: 12px;
             background-image: url("data:image/jpg;base64,{img}");
             background-size: cover;
@@ -56,46 +46,29 @@ def tile(title, image_path, key, data, highlight=None, color="#00e0ff"):
             left: 20px;
             color: white;
             font-size: 20px;
-            font-weight: 500;
         }}
 
         .tile-info {{
             position: absolute;
             top: 15px;
             left: 20px;
-            color: {color};
-            font-size: 15px;
-        }}
-
-        .tile-highlight {{
-            position: absolute;
-            top: 15px;
-            right: 20px;
-            font-size: 28px;
-            font-weight: bold;
-            color: white;
+            color: #00e0ff;
+            font-size: 14px;
         }}
 
         div[data-testid="stButton"] > button {{
             opacity: 0;
-            height: 200px;
+            height: 180px;
             width: 100%;
             position: absolute;
-            top: 0;
-            left: 0;
         }}
         </style>
 
         <div class="tile-container">
             <div class="tile-{key}">
                 <div class="overlay-{key}">
-                    <div class="tile-info">
-                        {data_html}
-                    </div>
-                    {highlight_html}
-                    <div class="tile-title">
-                        {title}
-                    </div>
+                    <div class="tile-info">{data_html}</div>
+                    <div class="tile-title">{title}</div>
                 </div>
             </div>
         </div>
@@ -107,11 +80,28 @@ def tile(title, image_path, key, data, highlight=None, color="#00e0ff"):
 
 def render():
 
+    # ===== NOAA DATA =====
     sw = get_kp_index()
-    kp = sw["kp"]
-    status = sw["status"]
-    kp_color = get_kp_color(kp)
+    times, values = get_kp_forecast()
 
+    # ===== GRAPH (TOP) =====
+    st.subheader("Geomagnetic Storm Forecast")
+
+    if values:
+        plt.figure()
+
+        # IMPORTANT: no color specified per tool rules
+        plt.bar(range(len(values)), values)
+
+        plt.xticks(range(len(times)), [t[-5:] for t in times], rotation=45)
+        plt.ylabel("Kp Index")
+        plt.xlabel("Time (UTC)")
+
+        st.pyplot(plt)
+    else:
+        st.warning("No NOAA forecast data available")
+
+    # ===== TILES =====
     col1, col2 = st.columns(2)
 
     with col1:
@@ -120,11 +110,9 @@ def render():
             "graphics/space_weather.jpg",
             "space_weather",
             {
-                "Kp Index": kp,
-                "Geomagnetic": status
-            },
-            highlight=f"Kp {kp}",
-            color=kp_color
+                "Kp": sw["kp"],
+                "Condition": sw["status"]
+            }
         )
 
     with col2:
@@ -143,7 +131,7 @@ def render():
     with col3:
         tile(
             "CDM",
-            "graphics/cdm.jpg",
+            "graphics/cdm.png",
             "cdm",
             {
                 "Active": "N/A",

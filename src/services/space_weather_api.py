@@ -1,12 +1,13 @@
 import requests
 
-NOAA_KP_URL = "https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json"
+NOAA_KP_NOW = "https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json"
+NOAA_KP_FORECAST = "https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json"
+
 
 def get_kp_index():
     try:
-        response = requests.get(NOAA_KP_URL, timeout=5)
-        data = response.json()
-
+        res = requests.get(NOAA_KP_NOW, timeout=5)
+        data = res.json()
         latest = data[-1]
         kp = float(latest[1])
 
@@ -15,11 +16,26 @@ def get_kp_index():
             "status": classify_kp(kp)
         }
 
-    except Exception:
-        return {
-            "kp": "N/A",
-            "status": "Unavailable"
-        }
+    except:
+        return {"kp": "N/A", "status": "Unavailable"}
+
+
+def get_kp_forecast():
+    try:
+        res = requests.get(NOAA_KP_FORECAST, timeout=5)
+        data = res.json()
+
+        times = []
+        values = []
+
+        for row in data[1:15]:  # next ~14 points
+            times.append(row[0])
+            values.append(float(row[1]))
+
+        return times, values
+
+    except:
+        return [], []
 
 
 def classify_kp(kp):
@@ -31,12 +47,12 @@ def classify_kp(kp):
     elif kp < 5:
         return "Active"
     elif kp < 6:
-        return "Minor Storm (G1)"
+        return "G1"
     elif kp < 7:
-        return "Moderate Storm (G2)"
+        return "G2"
     elif kp < 8:
-        return "Strong Storm (G3)"
+        return "G3"
     elif kp < 9:
-        return "Severe Storm (G4)"
+        return "G4"
     else:
-        return "Extreme Storm (G5)"
+        return "G5"
