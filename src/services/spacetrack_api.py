@@ -25,10 +25,10 @@ def get_active_leo_satellites_by_country(identity, password, limit=10):
     session = spacetrack_login(identity, password)
 
     query = (
-        "/basicspacedata/query/class/gp/"
-        "decay_date/null-val/"
-        "period/<225/"
-        "orderby/CURRENT ascending/"
+        "/basicspacedata/query/class/satcat/"
+        "DECAY/null/"
+        "PERIOD/<225/"
+        "orderby/COUNTRY_CODE/"
         "format/json"
     )
 
@@ -37,17 +37,16 @@ def get_active_leo_satellites_by_country(identity, password, limit=10):
     resp = session.get(url, timeout=20)
 
     if resp.status_code != 200:
-        raise Exception("Failed to fetch Space-Track data")
+        raise Exception(f"Space-Track fetch failed: {resp.status_code}")
 
     data = resp.json()
 
     if not data:
         return [], []
 
-    countries = [obj.get("COUNTRY_CODE", "UNK") for obj in data]
+    countries = [obj.get("COUNTRY", "UNK") for obj in data]
 
     counter = Counter(countries)
-
     top = counter.most_common(limit)
 
     labels = [c[0] for c in top]
