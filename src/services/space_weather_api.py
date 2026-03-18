@@ -3,12 +3,24 @@ from datetime import datetime
 from collections import defaultdict
 
 
+def safe_json(url):
+    try:
+        r = requests.get(url, timeout=10)
+
+        if r.status_code != 200:
+            return []
+
+        return r.json()
+    except:
+        return []
+
+
 def get_kp_history_and_forecast():
     hist_url = "https://services.swpc.noaa.gov/json/planetary_k_index_1m.json"
     forecast_url = "https://services.swpc.noaa.gov/json/planetary_k_index_3d.json"
 
-    hist = requests.get(hist_url, timeout=10).json()
-    forecast = requests.get(forecast_url, timeout=10).json()
+    hist = safe_json(hist_url)
+    forecast = safe_json(forecast_url)
 
     combined = []
 
@@ -30,6 +42,9 @@ def get_kp_history_and_forecast():
 def get_daily_kp():
     data = get_kp_history_and_forecast()
 
+    if not data:
+        return [], []
+
     daily = defaultdict(list)
 
     for t, v in data:
@@ -50,7 +65,7 @@ def get_kp_index():
     data = get_kp_history_and_forecast()
 
     if not data:
-        return {"kp": "N/A", "status": "N/A"}
+        return {"kp": "N/A", "status": "No Data"}
 
     latest = data[-1][1]
 

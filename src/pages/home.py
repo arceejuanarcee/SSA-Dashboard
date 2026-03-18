@@ -68,37 +68,43 @@ def tile(title, image_path, key):
 def render():
     st.subheader("Geomagnetic Storm Forecast")
 
-    days, values = get_daily_kp()
+    try:
+        days, values = get_daily_kp()
 
-    if values:
-        fig, ax = plt.subplots(figsize=(5, 2.5))
+        if values:
+            fig, ax = plt.subplots(figsize=(5, 2.5))
 
-        bars = ax.bar(days, values)
+            bars = ax.bar(days, values)
 
-        for i, v in enumerate(values):
-            if v < 3:
-                bars[i].set_color("green")
-            elif v < 5:
-                bars[i].set_color("yellow")
-            elif v < 7:
-                bars[i].set_color("orange")
-            else:
-                bars[i].set_color("red")
+            for i, v in enumerate(values):
+                if v < 3:
+                    bars[i].set_color("green")
+                elif v < 5:
+                    bars[i].set_color("yellow")
+                elif v < 7:
+                    bars[i].set_color("orange")
+                else:
+                    bars[i].set_color("red")
 
-        ax.set_ylim(0, 9)
+            ax.set_ylim(0, 9)
 
-        for i, v in enumerate(values):
-            ax.text(i, v + 0.2, f"{v:.1f}", ha='center', fontsize=7)
+            for i, v in enumerate(values):
+                ax.text(i, v + 0.2, f"{v:.1f}", ha='center', fontsize=7)
 
-        ax.tick_params(axis='x', labelsize=8)
+            ax.tick_params(axis='x', labelsize=8)
 
-        fig.tight_layout()
+            fig.tight_layout()
 
-        col1, col2 = st.columns([1,1])
-        with col1:
-            st.pyplot(fig)
-    else:
-        st.warning("No NOAA data available")
+            col_graph, col_placeholder = st.columns([1, 1])
+
+            with col_graph:
+                st.pyplot(fig)
+
+        else:
+            st.warning("No NOAA data available")
+
+    except Exception:
+        st.warning("Space weather data unavailable")
 
     col1, col2 = st.columns(2)
 
