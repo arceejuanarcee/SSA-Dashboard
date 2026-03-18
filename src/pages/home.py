@@ -78,7 +78,7 @@ def render():
     col3, col4 = st.columns(2)
 
     with col3:
-        tile("CDM", "graphics/cdm.jpg", "cdm")
+        tile("CDM", "graphics/cdm.png", "cdm")
 
     with col4:
         tile("Rocket Launch Monitoring", "graphics/rocket.jpg", "rocket")
