@@ -13,6 +13,10 @@ def render_header():
         header {visibility: hidden;}
         footer {visibility: hidden;}
         #MainMenu {visibility: hidden;}
+
+        .stApp {
+            background-color: #0a0f14;
+        }
         </style>
     """, unsafe_allow_html=True)
 
@@ -24,29 +28,25 @@ def render_header():
             left: 0;
             right: 0;
             height: 90px;
-            background: linear-gradient(90deg, #0b3d5c, #155e75);
+            background: linear-gradient(90deg, #081c2c, #0b3d5c);
             display: flex;
             align-items: center;
             padding: 0 40px;
             z-index: 9999;
-            border-bottom: 2px solid #0a2c3a;
         }}
 
         .header-title {{
-            color: white;
-            font-size: 28px;
+            color: #e6f1f5;
+            font-size: 26px;
             font-weight: 500;
             margin-left: 20px;
-            letter-spacing: 0.5px;
         }}
 
         .logo {{
-            width: 65px;
-            height: 65px;
+            width: 60px;
+            height: 60px;
             border-radius: 50%;
             overflow: hidden;
-            border: 2px solid white;
-            background-color: white;
         }}
 
         .logo img {{
@@ -58,10 +58,6 @@ def render_header():
         .page-content {{
             margin-top: 120px;
             padding: 20px 40px;
-        }}
-
-        .stApp {{
-            background-color: #e6eef2;
         }}
         </style>
 
