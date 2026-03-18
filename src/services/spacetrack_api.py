@@ -35,7 +35,6 @@ def get_active_leo_satellites_by_country(identity, password, limit=10):
             BASE_URL +
             "/basicspacedata/query/class/satcat/"
             "CURRENT/Y/"
-            "orderby/COUNTRY%20asc/"
             "format/json"
         )
 
@@ -52,21 +51,22 @@ def get_active_leo_satellites_by_country(identity, password, limit=10):
         if not isinstance(data, list) or len(data) == 0:
             return [], [], "Empty dataset"
 
+        # 🔥 SIMPLE + ROBUST LEO FILTER
         filtered = []
+
         for obj in data:
             try:
-                decay = obj.get("DECAY")
                 mm = float(obj.get("MEAN_MOTION", 0))
 
-                # ✅ FIXED CONDITION
-                if (decay is None or decay == "") and mm > 11:
+                # LEO condition ONLY
+                if mm > 11:
                     filtered.append(obj)
 
             except:
                 continue
 
-        if not filtered:
-            return [], [], "No LEO satellites after filtering"
+        if len(filtered) == 0:
+            return [], [], "No satellites passed LEO filter (unexpected)"
 
         countries = [
             obj.get("COUNTRY") or "UNK"
