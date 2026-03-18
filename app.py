@@ -1,9 +1,17 @@
 import streamlit as st
+import sys
+import os
+
+sys.path.append(os.path.abspath("."))
 
 from src.components.header import render_header
 from src.utils.navigation import init_navigation, navigate
 
-from src.pages import home, space_weather, reentry, cdm, rocket
+import src.pages.home as home
+import src.pages.space_weather as space_weather
+import src.pages.reentry as reentry
+import src.pages.cdm as cdm
+import src.pages.rocket as rocket
 
 st.set_page_config(layout="wide")
 

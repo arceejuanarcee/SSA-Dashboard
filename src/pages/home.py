@@ -2,26 +2,16 @@ import streamlit as st
 from src.components.tile import tile
 
 def render():
+
     st.markdown("""
         <style>
-        .tile-container {
-            display: flex;
-            justify-content: space-around;
-            margin-top: 60px;
-        }
-
-        .tile-row {
-            display: flex;
-            justify-content: space-around;
-            margin-top: 60px;
-        }
-
         .stButton button {
-            height: 140px;
+            height: 150px;
             font-size: 20px;
             background-color: #1f5f75;
             color: white;
             border: 2px solid #0b2e3c;
+            border-radius: 4px;
         }
         </style>
     """, unsafe_allow_html=True)
