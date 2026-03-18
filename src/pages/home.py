@@ -3,6 +3,7 @@ import base64
 import matplotlib.pyplot as plt
 
 from src.services.space_weather_api import get_daily_kp
+from src.services.spacetrack_api import get_active_leo_satellites_by_country
 
 
 def get_base64(path):
@@ -73,7 +74,6 @@ def spacer(height="2rem"):
 
 
 def render():
-    # GLOBAL SPACING CONTROL
     st.markdown("""
         <style>
         .block-container {
@@ -85,29 +85,23 @@ def render():
             margin-top: 0rem !important;
             margin-bottom: 0.2rem !important;
         }
-
-        div[data-testid="stVerticalBlock"] > div {
-            gap: 0.2rem;
-        }
         </style>
     """, unsafe_allow_html=True)
 
-    # TITLE
+    # HEADER
     st.markdown("<h3>Geomagnetic Storm Forecast</h3>", unsafe_allow_html=True)
 
-    # GRAPH AREA (HALF WIDTH)
-    graph_col, next_graph_col = st.columns(2)
+    col1, col2 = st.columns(2)
 
-    with graph_col:
+    # LEFT GRAPH (NOAA)
+    with col1:
         try:
             days, values = get_daily_kp()
 
             if values:
                 fig, ax = plt.subplots(figsize=(5.2, 2.4))
-
                 bars = ax.bar(days, values)
 
-                # COLOR CODING
                 for i, v in enumerate(values):
                     if v < 3:
                         bars[i].set_color("green")
@@ -119,12 +113,8 @@ def render():
                         bars[i].set_color("red")
 
                 ax.set_ylim(0, 9)
-                ax.margins(y=0.05)
-
                 ax.tick_params(axis="x", labelsize=8)
-                ax.tick_params(axis="y", labelsize=8)
 
-                # VALUE LABELS
                 for i, v in enumerate(values):
                     ax.text(i, v + 0.1, f"{v:.1f}", ha="center", fontsize=8)
 
@@ -132,33 +122,53 @@ def render():
 
                 st.pyplot(fig, use_container_width=True)
 
-            else:
-                st.warning("No NOAA data available")
+        except Exception:
+            st.warning("Space weather unavailable")
+
+    # RIGHT GRAPH (SPACE-TRACK)
+    with col2:
+        st.markdown("<h3 style='font-size:16px;'>Top 10 Countries by Active LEO Satellites</h3>", unsafe_allow_html=True)
+
+        try:
+            identity = st.secrets["spacetrack"]["identity"]
+            password = st.secrets["spacetrack"]["password"]
+
+            labels, values = get_active_leo_satellites_by_country(identity, password)
+
+            if values:
+                fig2, ax2 = plt.subplots(figsize=(5.2, 2.4))
+
+                bars = ax2.bar(labels, values)
+
+                ax2.set_ylabel("Satellites", fontsize=8)
+                ax2.tick_params(axis="x", rotation=45, labelsize=8)
+
+                for i, v in enumerate(values):
+                    ax2.text(i, v, str(v), ha="center", fontsize=7)
+
+                plt.subplots_adjust(top=0.9, bottom=0.3)
+
+                st.pyplot(fig2, use_container_width=True)
 
         except Exception:
-            st.warning("Space weather data unavailable")
+            st.warning("Space-Track data unavailable")
 
-    # SECOND GRAPH PLACEHOLDER
-    with next_graph_col:
-        st.empty()
-
-    # CONTROLLED GAP BETWEEN GRAPH AND TILES
+    # GAP BEFORE TILES
     spacer("2.5rem")
 
-    # TILES ROW 1
-    col1, col2 = st.columns(2)
+    # TILES
+    t1, t2 = st.columns(2)
 
-    with col1:
+    with t1:
         tile("Space Weather Forecast", "graphics/space_weather.jpg", "space_weather")
 
-    with col2:
+    with t2:
         tile("Orbital Debris Reentry", "graphics/reentry.jpg", "reentry")
 
-    # TILES ROW 2
-    col3, col4 = st.columns(2)
+    t3, t4 = st.columns(2)
 
-    with col3:
+    with t3:
         tile("CDM", "graphics/cdm.png", "cdm")
 
-    with col4:
+    with t4:
         tile("Rocket Launch Monitoring", "graphics/rocket.jpg", "rocket")
