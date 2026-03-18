@@ -2,6 +2,7 @@ import streamlit as st
 import base64
 import matplotlib.pyplot as plt
 from datetime import datetime
+from collections import defaultdict
 
 from src.services.space_weather_api import get_kp_forecast
 
@@ -72,33 +73,49 @@ def render():
     st.subheader("Geomagnetic Storm Forecast")
 
     if values and times:
-        fig, ax = plt.subplots(figsize=(6, 1.8))
 
-        x = list(range(len(values)))
+        daily = defaultdict(list)
 
-        ax.bar(x, values)
-
-        labels = []
-        for t in times:
+        for t, v in zip(times, values):
             try:
                 dt = datetime.fromisoformat(t.replace("Z", ""))
-                labels.append(dt.strftime("%H:%M"))
+                day = dt.strftime("%b %d")
+                daily[day].append(float(v))
             except:
-                labels.append("")
+                continue
 
-        ax.set_xticks(x)
-        ax.set_xticklabels(labels, rotation=45, fontsize=7)
+        days = list(daily.keys())
+        avg_kp = [sum(v)/len(v) for v in daily.values()]
+
+        fig, ax = plt.subplots(figsize=(5, 2.5))
+
+        bars = ax.bar(days, avg_kp)
+
+        for i, v in enumerate(avg_kp):
+            if v < 3:
+                bars[i].set_color("green")
+            elif v < 5:
+                bars[i].set_color("yellow")
+            elif v < 7:
+                bars[i].set_color("orange")
+            else:
+                bars[i].set_color("red")
 
         ax.set_ylim(0, 9)
+        ax.set_ylabel("Kp Index", fontsize=8)
 
-        ax.set_ylabel("Kp", fontsize=8)
-        ax.set_xlabel("UTC", fontsize=8)
-
+        ax.tick_params(axis='x', labelsize=8)
         ax.tick_params(axis='y', labelsize=7)
+
+        for i, v in enumerate(avg_kp):
+            ax.text(i, v + 0.2, f"{v:.1f}", ha='center', fontsize=7)
 
         fig.tight_layout()
 
-        st.pyplot(fig)
+        col_graph, col_empty = st.columns([1,1])
+        with col_graph:
+            st.pyplot(fig)
+
     else:
         st.warning("No NOAA forecast data available")
 
