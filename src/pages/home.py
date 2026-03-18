@@ -10,12 +10,8 @@ def get_base64(path):
         return base64.b64encode(f.read()).decode()
 
 
-def tile(title, image_path, key, data):
+def tile(title, image_path, key):
     img = get_base64(image_path)
-
-    data_html = ""
-    for k, v in data.items():
-        data_html += f"<div><b>{k}</b>: {v}</div>"
 
     st.markdown(f"""
         <style>
@@ -48,14 +44,6 @@ def tile(title, image_path, key, data):
             font-size: 20px;
         }}
 
-        .tile-info {{
-            position: absolute;
-            top: 15px;
-            left: 20px;
-            color: #00e0ff;
-            font-size: 14px;
-        }}
-
         div[data-testid="stButton"] > button {{
             opacity: 0;
             height: 180px;
@@ -67,7 +55,6 @@ def tile(title, image_path, key, data):
         <div class="tile-container">
             <div class="tile-{key}">
                 <div class="overlay-{key}">
-                    <div class="tile-info">{data_html}</div>
                     <div class="tile-title">{title}</div>
                 </div>
             </div>
@@ -79,51 +66,45 @@ def tile(title, image_path, key, data):
 
 
 def render():
-
-    # ===== NOAA DATA =====
-    sw = get_kp_index()
     times, values = get_kp_forecast()
 
-    # ===== GRAPH (TOP) =====
     st.subheader("Geomagnetic Storm Forecast")
 
-    if values:
-        plt.figure()
+    if values and times:
+        fig, ax = plt.subplots(figsize=(6, 2.2))
 
-        # IMPORTANT: no color specified per tool rules
-        plt.bar(range(len(values)), values)
+        ax.bar(range(len(values)), values)
 
-        plt.xticks(range(len(times)), [t[-5:] for t in times], rotation=45)
-        plt.ylabel("Kp Index")
-        plt.xlabel("Time (UTC)")
+        ax.set_xticks(range(len(times)))
+        ax.set_xticklabels([t[-5:] for t in times], rotation=45, fontsize=8)
 
-        st.pyplot(plt)
+        ax.set_ylabel("Kp", fontsize=9)
+        ax.set_xlabel("UTC", fontsize=9)
+
+        ax.set_ylim(0, 9)
+
+        ax.tick_params(axis='y', labelsize=8)
+
+        fig.tight_layout()
+
+        st.pyplot(fig)
     else:
         st.warning("No NOAA forecast data available")
 
-    # ===== TILES =====
     col1, col2 = st.columns(2)
 
     with col1:
         tile(
             "Space Weather Forecast",
             "graphics/space_weather.jpg",
-            "space_weather",
-            {
-                "Kp": sw["kp"],
-                "Condition": sw["status"]
-            }
+            "space_weather"
         )
 
     with col2:
         tile(
             "Orbital Debris Reentry",
             "graphics/reentry.jpg",
-            "reentry",
-            {
-                "Object": "Pending",
-                "ETA": "Pending"
-            }
+            "reentry"
         )
 
     col3, col4 = st.columns(2)
@@ -132,20 +113,12 @@ def render():
         tile(
             "CDM",
             "graphics/cdm.png",
-            "cdm",
-            {
-                "Active": "N/A",
-                "Max Pc": "N/A"
-            }
+            "cdm"
         )
 
     with col4:
         tile(
             "Rocket Launch Monitoring",
             "graphics/rocket.jpg",
-            "rocket",
-            {
-                "Object": "N/A",
-                "Status": "Idle"
-            }
+            "rocket"
         )
