@@ -15,7 +15,6 @@ def get_active_leo_satellites_by_country(identity, password, limit=10):
             "Referer": "https://www.space-track.org/auth/login"
         }
 
-        # LOGIN
         login_resp = session.post(
             BASE_URL + "/ajaxauth/login",
             data={
@@ -32,7 +31,6 @@ def get_active_leo_satellites_by_country(identity, password, limit=10):
         if "failed" in login_resp.text.lower():
             return [], [], "Invalid credentials"
 
-        # ✅ EXACT WORKING QUERY (NO FILTER)
         query_url = (
             BASE_URL +
             "/basicspacedata/query/class/satcat/"
@@ -54,22 +52,22 @@ def get_active_leo_satellites_by_country(identity, password, limit=10):
         if not isinstance(data, list) or len(data) == 0:
             return [], [], "Empty dataset"
 
-        # ✅ FILTER IN PYTHON (CORRECT WAY)
         filtered = []
         for obj in data:
             try:
                 decay = obj.get("DECAY")
                 mm = float(obj.get("MEAN_MOTION", 0))
 
-                if decay is None and mm > 11:
+                # ✅ FIXED CONDITION
+                if (decay is None or decay == "") and mm > 11:
                     filtered.append(obj)
+
             except:
                 continue
 
         if not filtered:
             return [], [], "No LEO satellites after filtering"
 
-        # PROCESS
         countries = [
             obj.get("COUNTRY") or "UNK"
             for obj in filtered
