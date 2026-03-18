@@ -42,6 +42,7 @@ def tile(title, image_path, key):
             left: 18px;
             color: white;
             font-size: 18px;
+            font-weight: 500;
         }}
 
         div[data-testid="stButton"] > button {{
@@ -68,43 +69,44 @@ def tile(title, image_path, key):
 def render():
     st.subheader("Geomagnetic Storm Forecast")
 
-    try:
-        days, values = get_daily_kp()
+    graph_col, next_graph_col = st.columns(2)
 
-        if values:
-            fig, ax = plt.subplots(figsize=(5, 2.5))
+    with graph_col:
+        try:
+            days, values = get_daily_kp()
 
-            bars = ax.bar(days, values)
+            if values:
+                fig, ax = plt.subplots(figsize=(5.2, 2.6))
 
-            for i, v in enumerate(values):
-                if v < 3:
-                    bars[i].set_color("green")
-                elif v < 5:
-                    bars[i].set_color("yellow")
-                elif v < 7:
-                    bars[i].set_color("orange")
-                else:
-                    bars[i].set_color("red")
+                bars = ax.bar(days, values)
 
-            ax.set_ylim(0, 9)
+                for i, v in enumerate(values):
+                    if v < 3:
+                        bars[i].set_color("green")
+                    elif v < 5:
+                        bars[i].set_color("yellow")
+                    elif v < 7:
+                        bars[i].set_color("orange")
+                    else:
+                        bars[i].set_color("red")
 
-            for i, v in enumerate(values):
-                ax.text(i, v + 0.2, f"{v:.1f}", ha='center', fontsize=7)
+                ax.set_ylim(0, 9)
+                ax.set_ylabel("Kp Index", fontsize=9)
+                ax.tick_params(axis="x", labelsize=8)
+                ax.tick_params(axis="y", labelsize=8)
 
-            ax.tick_params(axis='x', labelsize=8)
+                for i, v in enumerate(values):
+                    ax.text(i, v + 0.15, f"{v:.1f}", ha="center", fontsize=8)
 
-            fig.tight_layout()
-
-            col_graph, col_placeholder = st.columns([1, 1])
-
-            with col_graph:
+                fig.tight_layout()
                 st.pyplot(fig)
+            else:
+                st.warning("No NOAA data available")
+        except Exception:
+            st.warning("Space weather data unavailable")
 
-        else:
-            st.warning("No NOAA data available")
-
-    except Exception:
-        st.warning("Space weather data unavailable")
+    with next_graph_col:
+        st.empty()
 
     col1, col2 = st.columns(2)
 

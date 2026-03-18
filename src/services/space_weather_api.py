@@ -1,81 +1,76 @@
 import requests
-from datetime import datetime
+from datetime import datetime, date, timedelta
 from collections import defaultdict
 
 
 def safe_json(url):
     try:
-        r = requests.get(url, timeout=10)
-
-        if r.status_code != 200:
-            return []
-
-        return r.json()
-    except:
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+        return response.json()
+    except Exception:
         return []
 
 
-def get_kp_history_and_forecast():
-    hist_url = "https://services.swpc.noaa.gov/json/planetary_k_index_1m.json"
-    forecast_url = "https://services.swpc.noaa.gov/json/planetary_k_index_3d.json"
-
-    hist = safe_json(hist_url)
-    forecast = safe_json(forecast_url)
-
-    combined = []
-
-    for row in hist[-200:]:
-        try:
-            combined.append((row["time_tag"], float(row["kp_index"])))
-        except:
-            continue
-
-    for row in forecast:
-        try:
-            combined.append((row["time_tag"], float(row["kp_index"])))
-        except:
-            continue
-
-    return combined
-
-
-def get_daily_kp():
-    data = get_kp_history_and_forecast()
-
-    if not data:
-        return [], []
-
-    daily = defaultdict(list)
-
-    for t, v in data:
-        try:
-            dt = datetime.fromisoformat(t.replace("Z", ""))
-            day = dt.strftime("%b %d")
-            daily[day].append(v)
-        except:
-            continue
-
-    days = list(daily.keys())
-    values = [sum(v)/len(v) for v in daily.values()]
-
-    return days, values
-
-
 def get_kp_index():
-    data = get_kp_history_and_forecast()
+    url = "https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json"
+    data = safe_json(url)
 
-    if not data:
+    if not data or len(data) < 2:
         return {"kp": "N/A", "status": "No Data"}
 
-    latest = data[-1][1]
+    try:
+        latest = data[-1]
+        kp = float(latest[1])
+    except Exception:
+        return {"kp": "N/A", "status": "No Data"}
 
-    if latest < 3:
+    if kp < 3:
         status = "Quiet"
-    elif latest < 5:
+    elif kp < 5:
         status = "Unsettled"
-    elif latest < 7:
-        status = "Storm"
+    elif kp < 6:
+        status = "Minor Storm"
+    elif kp < 7:
+        status = "Moderate Storm"
+    elif kp < 8:
+        status = "Strong Storm"
     else:
         status = "Severe Storm"
 
-    return {"kp": latest, "status": status}
+    return {"kp": kp, "status": status}
+
+
+def get_daily_kp():
+    url = "https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json"
+    data = safe_json(url)
+
+    if not data or len(data) < 2:
+        return [], []
+
+    today = date.today()
+    history_start = today - timedelta(days=7)
+    forecast_end = today + timedelta(days=2)
+
+    daily = defaultdict(list)
+
+    for row in data[1:]:
+        try:
+            time_tag = row[0]
+            kp = float(row[1])
+            dt = datetime.strptime(time_tag, "%Y-%m-%d %H:%M:%S")
+            d = dt.date()
+
+            if history_start <= d <= forecast_end:
+                daily[d].append(kp)
+        except Exception:
+            continue
+
+    if not daily:
+        return [], []
+
+    ordered_days = sorted(daily.keys())
+    labels = [d.strftime("%b %d") for d in ordered_days]
+    values = [sum(daily[d]) / len(daily[d]) for d in ordered_days]
+
+    return labels, values
