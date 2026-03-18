@@ -68,8 +68,12 @@ def tile(title, image_path, key):
         st.session_state["page"] = key
 
 
+def spacer(height="2rem"):
+    st.markdown(f"<div style='margin-top:{height};'></div>", unsafe_allow_html=True)
+
+
 def render():
-    # MAXIMUM SPACING COMPRESSION
+    # GLOBAL SPACING CONTROL
     st.markdown("""
         <style>
         .block-container {
@@ -88,10 +92,10 @@ def render():
         </style>
     """, unsafe_allow_html=True)
 
-    # TITLE (VERY TIGHT)
+    # TITLE
     st.markdown("<h3>Geomagnetic Storm Forecast</h3>", unsafe_allow_html=True)
 
-    # COLUMNS
+    # GRAPH AREA (HALF WIDTH)
     graph_col, next_graph_col = st.columns(2)
 
     with graph_col:
@@ -103,7 +107,7 @@ def render():
 
                 bars = ax.bar(days, values)
 
-                # COLOR LOGIC
+                # COLOR CODING
                 for i, v in enumerate(values):
                     if v < 3:
                         bars[i].set_color("green")
@@ -115,8 +119,6 @@ def render():
                         bars[i].set_color("red")
 
                 ax.set_ylim(0, 9)
-
-                # REMOVE EXTRA TOP SPACE INSIDE PLOT
                 ax.margins(y=0.05)
 
                 ax.tick_params(axis="x", labelsize=8)
@@ -126,7 +128,6 @@ def render():
                 for i, v in enumerate(values):
                     ax.text(i, v + 0.1, f"{v:.1f}", ha="center", fontsize=8)
 
-                # CRITICAL: REMOVE FIG PADDING
                 plt.subplots_adjust(top=0.95, bottom=0.2)
 
                 st.pyplot(fig, use_container_width=True)
@@ -137,11 +138,14 @@ def render():
         except Exception:
             st.warning("Space weather data unavailable")
 
-    # SECOND GRAPH SPACE
+    # SECOND GRAPH PLACEHOLDER
     with next_graph_col:
         st.empty()
 
-    # TILES
+    # CONTROLLED GAP BETWEEN GRAPH AND TILES
+    spacer("2.5rem")
+
+    # TILES ROW 1
     col1, col2 = st.columns(2)
 
     with col1:
@@ -150,6 +154,7 @@ def render():
     with col2:
         tile("Orbital Debris Reentry", "graphics/reentry.jpg", "reentry")
 
+    # TILES ROW 2
     col3, col4 = st.columns(2)
 
     with col3:
