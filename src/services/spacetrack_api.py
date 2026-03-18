@@ -32,11 +32,12 @@ def get_active_leo_satellites_by_country(identity, password, limit=10):
         if "failed" in login_resp.text.lower():
             return [], [], "Invalid credentials"
 
-        # ✅ SAFE QUERY (NO COMPLEX FILTER)
+        # ✅ EXACT WORKING QUERY (NO FILTER)
         query_url = (
             BASE_URL +
             "/basicspacedata/query/class/satcat/"
-            "DECAY/null/"
+            "CURRENT/Y/"
+            "orderby/COUNTRY%20asc/"
             "format/json"
         )
 
@@ -53,12 +54,14 @@ def get_active_leo_satellites_by_country(identity, password, limit=10):
         if not isinstance(data, list) or len(data) == 0:
             return [], [], "Empty dataset"
 
-        # ✅ FILTER IN PYTHON (RELIABLE)
+        # ✅ FILTER IN PYTHON (CORRECT WAY)
         filtered = []
         for obj in data:
             try:
+                decay = obj.get("DECAY")
                 mm = float(obj.get("MEAN_MOTION", 0))
-                if mm > 11:
+
+                if decay is None and mm > 11:
                     filtered.append(obj)
             except:
                 continue
