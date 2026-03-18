@@ -1,58 +1,46 @@
 import requests
-
-NOAA_KP_NOW = "https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json"
-NOAA_KP_FORECAST = "https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json"
-
-
-def get_kp_index():
-    try:
-        res = requests.get(NOAA_KP_NOW, timeout=5)
-        data = res.json()
-        latest = data[-1]
-        kp = float(latest[1])
-
-        return {
-            "kp": kp,
-            "status": classify_kp(kp)
-        }
-
-    except:
-        return {"kp": "N/A", "status": "Unavailable"}
+from datetime import datetime
+from collections import defaultdict
 
 
-def get_kp_forecast():
-    try:
-        res = requests.get(NOAA_KP_FORECAST, timeout=5)
-        data = res.json()
+def get_kp_history_and_forecast():
+    hist_url = "https://services.swpc.noaa.gov/json/planetary_k_index_1m.json"
+    forecast_url = "https://services.swpc.noaa.gov/json/planetary_k_index_3d.json"
 
-        times = []
-        values = []
+    hist = requests.get(hist_url, timeout=10).json()
+    forecast = requests.get(forecast_url, timeout=10).json()
 
-        for row in data[1:15]:  # next ~14 points
-            times.append(row[0])
-            values.append(float(row[1]))
+    combined = []
 
-        return times, values
+    for row in hist[-200:]:
+        try:
+            combined.append((row["time_tag"], float(row["kp_index"])))
+        except:
+            continue
 
-    except:
-        return [], []
+    for row in forecast:
+        try:
+            combined.append((row["time_tag"], float(row["kp_index"])))
+        except:
+            continue
+
+    return combined
 
 
-def classify_kp(kp):
-    if kp == "N/A":
-        return "Unavailable"
+def get_daily_kp():
+    data = get_kp_history_and_forecast()
 
-    if kp < 4:
-        return "Quiet"
-    elif kp < 5:
-        return "Active"
-    elif kp < 6:
-        return "G1"
-    elif kp < 7:
-        return "G2"
-    elif kp < 8:
-        return "G3"
-    elif kp < 9:
-        return "G4"
-    else:
-        return "G5"
+    daily = defaultdict(list)
+
+    for t, v in data:
+        try:
+            dt = datetime.fromisoformat(t.replace("Z", ""))
+            day = dt.strftime("%b %d")
+            daily[day].append(v)
+        except:
+            continue
+
+    days = list(daily.keys())
+    values = [sum(v)/len(v) for v in daily.values()]
+
+    return days, values

@@ -1,10 +1,8 @@
 import streamlit as st
 import base64
 import matplotlib.pyplot as plt
-from datetime import datetime
-from collections import defaultdict
 
-from src.services.space_weather_api import get_kp_forecast
+from src.services.space_weather_api import get_daily_kp
 
 
 def get_base64(path):
@@ -68,30 +66,16 @@ def tile(title, image_path, key):
 
 
 def render():
-    times, values = get_kp_forecast()
-
     st.subheader("Geomagnetic Storm Forecast")
 
-    if values and times:
+    days, values = get_daily_kp()
 
-        daily = defaultdict(list)
-
-        for t, v in zip(times, values):
-            try:
-                dt = datetime.fromisoformat(t.replace("Z", ""))
-                day = dt.strftime("%b %d")
-                daily[day].append(float(v))
-            except:
-                continue
-
-        days = list(daily.keys())
-        avg_kp = [sum(v)/len(v) for v in daily.values()]
-
+    if values:
         fig, ax = plt.subplots(figsize=(5, 2.5))
 
-        bars = ax.bar(days, avg_kp)
+        bars = ax.bar(days, values)
 
-        for i, v in enumerate(avg_kp):
+        for i, v in enumerate(values):
             if v < 3:
                 bars[i].set_color("green")
             elif v < 5:
@@ -102,22 +86,19 @@ def render():
                 bars[i].set_color("red")
 
         ax.set_ylim(0, 9)
-        ax.set_ylabel("Kp Index", fontsize=8)
+
+        for i, v in enumerate(values):
+            ax.text(i, v + 0.2, f"{v:.1f}", ha='center', fontsize=7)
 
         ax.tick_params(axis='x', labelsize=8)
-        ax.tick_params(axis='y', labelsize=7)
-
-        for i, v in enumerate(avg_kp):
-            ax.text(i, v + 0.2, f"{v:.1f}", ha='center', fontsize=7)
 
         fig.tight_layout()
 
-        col_graph, col_empty = st.columns([1,1])
-        with col_graph:
+        col1, col2 = st.columns([1,1])
+        with col1:
             st.pyplot(fig)
-
     else:
-        st.warning("No NOAA forecast data available")
+        st.warning("No NOAA data available")
 
     col1, col2 = st.columns(2)
 
