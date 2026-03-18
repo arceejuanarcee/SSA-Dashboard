@@ -5,61 +5,66 @@ import streamlit as st
 BASE_URL = "https://www.space-track.org"
 
 
-def spacetrack_login(identity, password):
-    session = requests.Session()
-
-    headers = {
-        "User-Agent": "Mozilla/5.0",
-    }
-
-    login_url = BASE_URL + "/ajaxauth/login"
-
-    resp = session.post(
-        login_url,
-        data={"identity": identity, "password": password},
-        headers=headers,
-        timeout=20
-    )
-
-    if resp.status_code != 200:
-        return None, "Login failed"
-
-    if "Login" in resp.text:
-        return None, "Invalid credentials or blocked"
-
-    return session, None
-
-
-@st.cache_data(ttl=600)
 def get_active_leo_satellites_by_country(identity, password, limit=10):
     try:
-        session, err = spacetrack_login(identity, password)
+        session = requests.Session()
 
-        if err:
-            return [], [], err
+        # STEP 1: LOGIN
+        login_url = BASE_URL + "/ajaxauth/login"
 
-        url = (
+        login_payload = {
+            "identity": identity,
+            "password": password
+        }
+
+        headers = {
+            "User-Agent": "Mozilla/5.0",
+            "Referer": "https://www.space-track.org/auth/login"
+        }
+
+        login_resp = session.post(
+            login_url,
+            data=login_payload,
+            headers=headers,
+            timeout=30
+        )
+
+        if login_resp.status_code != 200:
+            return [], [], f"Login failed: {login_resp.status_code}"
+
+        # 🚨 CRITICAL CHECK
+        if "failed" in login_resp.text.lower():
+            return [], [], "Invalid credentials"
+
+        # STEP 2: QUERY (YOUR EXACT FILTER)
+        query_url = (
             BASE_URL +
             "/basicspacedata/query/class/satcat/"
             "DECAY/null/"
             "PERIOD/<225/"
+            "orderby/COUNTRY%20asc/"
             "format/json"
         )
 
-        resp = session.get(url, timeout=30)
+        resp = session.get(query_url, headers=headers, timeout=30)
 
         if resp.status_code != 200:
-            return [], [], f"Fetch failed: {resp.status_code}"
+            return [], [], f"Query failed: {resp.status_code}"
 
-        if "<html>" in resp.text.lower():
-            return [], [], "Blocked by Space-Track (HTML response)"
+        # 🚨 SPACE-TRACK BLOCK DETECTION
+        if "<html" in resp.text.lower():
+            return [], [], "Blocked by Space-Track (HTML returned)"
 
         data = resp.json()
 
         if not isinstance(data, list) or len(data) == 0:
-            return [], [], "No data returned"
+            return [], [], "Empty dataset"
 
-        countries = [obj.get("COUNTRY") or "UNK" for obj in data]
+        # STEP 3: PROCESS
+        countries = [
+            obj.get("COUNTRY") or "UNK"
+            for obj in data
+        ]
 
         counter = Counter(countries)
         top = counter.most_common(limit)

@@ -88,12 +88,10 @@ def render():
         </style>
     """, unsafe_allow_html=True)
 
-    # HEADER
     st.markdown("<h3>Geomagnetic Storm Forecast</h3>", unsafe_allow_html=True)
 
     col1, col2 = st.columns(2)
 
-    # LEFT GRAPH (NOAA)
     with col1:
         try:
             days, values = get_daily_kp()
@@ -125,7 +123,6 @@ def render():
         except Exception:
             st.warning("Space weather unavailable")
 
-    # RIGHT GRAPH (SPACE-TRACK)
     with col2:
         st.markdown("<h3 style='font-size:16px;'>Top 10 Countries by Active LEO Satellites</h3>", unsafe_allow_html=True)
 
@@ -133,9 +130,12 @@ def render():
             identity = st.secrets["spacetrack"]["identity"]
             password = st.secrets["spacetrack"]["password"]
 
-            labels, values = get_active_leo_satellites_by_country(identity, password)
+            labels, values, err = get_active_leo_satellites_by_country(identity, password)
 
-            if values:
+            if err:
+                st.error(err)
+
+            elif values:
                 fig2, ax2 = plt.subplots(figsize=(5.2, 2.4))
 
                 bars = ax2.bar(labels, values)
@@ -150,13 +150,14 @@ def render():
 
                 st.pyplot(fig2, use_container_width=True)
 
-        except Exception:
-            st.warning("Space-Track data unavailable")
+            else:
+                st.warning("No data available")
 
-    # GAP BEFORE TILES
+        except Exception as e:
+            st.error(f"Space-Track error: {e}")
+
     spacer("2.5rem")
 
-    # TILES
     t1, t2 = st.columns(2)
 
     with t1:
