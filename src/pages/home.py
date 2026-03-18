@@ -17,7 +17,7 @@ def tile(title, image_path, key):
         <style>
         .tile-container {{
             position: relative;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
         }}
 
         .tile-{key} {{
@@ -38,10 +38,10 @@ def tile(title, image_path, key):
 
         .tile-title {{
             position: absolute;
-            bottom: 15px;
-            left: 18px;
+            bottom: 12px;
+            left: 16px;
             color: white;
-            font-size: 18px;
+            font-size: 17px;
             font-weight: 500;
         }}
 
@@ -69,23 +69,29 @@ def tile(title, image_path, key):
 
 
 def render():
-    # FIX GLOBAL SPACING
+    # MAXIMUM SPACING COMPRESSION
     st.markdown("""
         <style>
         .block-container {
-            padding-top: 1rem !important;
+            padding-top: 0.5rem !important;
             padding-bottom: 0rem;
+        }
+
+        h3 {
+            margin-top: 0rem !important;
+            margin-bottom: 0.2rem !important;
+        }
+
+        div[data-testid="stVerticalBlock"] > div {
+            gap: 0.2rem;
         }
         </style>
     """, unsafe_allow_html=True)
 
-    # TITLE (tight spacing)
-    st.markdown(
-        "<h3 style='margin-bottom:0.4rem;'>Geomagnetic Storm Forecast</h3>",
-        unsafe_allow_html=True
-    )
+    # TITLE (VERY TIGHT)
+    st.markdown("<h3>Geomagnetic Storm Forecast</h3>", unsafe_allow_html=True)
 
-    # GRAPH LAYOUT (HALF WIDTH)
+    # COLUMNS
     graph_col, next_graph_col = st.columns(2)
 
     with graph_col:
@@ -93,11 +99,11 @@ def render():
             days, values = get_daily_kp()
 
             if values:
-                fig, ax = plt.subplots(figsize=(5.2, 2.6))
+                fig, ax = plt.subplots(figsize=(5.2, 2.4))
 
                 bars = ax.bar(days, values)
 
-                # COLOR CODING
+                # COLOR LOGIC
                 for i, v in enumerate(values):
                     if v < 3:
                         bars[i].set_color("green")
@@ -109,17 +115,21 @@ def render():
                         bars[i].set_color("red")
 
                 ax.set_ylim(0, 9)
-                ax.set_ylabel("Kp Index", fontsize=9)
+
+                # REMOVE EXTRA TOP SPACE INSIDE PLOT
+                ax.margins(y=0.05)
 
                 ax.tick_params(axis="x", labelsize=8)
                 ax.tick_params(axis="y", labelsize=8)
 
                 # VALUE LABELS
                 for i, v in enumerate(values):
-                    ax.text(i, v + 0.15, f"{v:.1f}", ha="center", fontsize=8)
+                    ax.text(i, v + 0.1, f"{v:.1f}", ha="center", fontsize=8)
 
-                fig.tight_layout()
-                st.pyplot(fig)
+                # CRITICAL: REMOVE FIG PADDING
+                plt.subplots_adjust(top=0.95, bottom=0.2)
+
+                st.pyplot(fig, use_container_width=True)
 
             else:
                 st.warning("No NOAA data available")
@@ -127,11 +137,11 @@ def render():
         except Exception:
             st.warning("Space weather data unavailable")
 
-    # RESERVED SPACE FOR SECOND GRAPH
+    # SECOND GRAPH SPACE
     with next_graph_col:
         st.empty()
 
-    # TILES SECTION
+    # TILES
     col1, col2 = st.columns(2)
 
     with col1:
