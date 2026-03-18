@@ -32,12 +32,12 @@ def get_active_leo_satellites_by_country(identity, password, limit=10):
         if "failed" in login_resp.text.lower():
             return [], [], "Invalid credentials"
 
-        # CORRECT LEO QUERY (FIXED)
+        # ✅ FIXED QUERY (NO MORE 500 ERROR)
         query_url = (
             BASE_URL +
             "/basicspacedata/query/class/satcat/"
             "DECAY/null/"
-            "MEAN_MOTION/>11/"
+            "MEAN_MOTION/11--16/"
             "orderby/COUNTRY%20asc/"
             "format/json"
         )
@@ -55,7 +55,7 @@ def get_active_leo_satellites_by_country(identity, password, limit=10):
         if not isinstance(data, list) or len(data) == 0:
             return [], [], "Empty dataset"
 
-        # PROCESS DATA
+        # PROCESS
         countries = [
             obj.get("COUNTRY") or "UNK"
             for obj in data
