@@ -44,3 +44,23 @@ def get_daily_kp():
     values = [sum(v)/len(v) for v in daily.values()]
 
     return days, values
+
+
+def get_kp_index():
+    data = get_kp_history_and_forecast()
+
+    if not data:
+        return {"kp": "N/A", "status": "N/A"}
+
+    latest = data[-1][1]
+
+    if latest < 3:
+        status = "Quiet"
+    elif latest < 5:
+        status = "Unsettled"
+    elif latest < 7:
+        status = "Storm"
+    else:
+        status = "Severe Storm"
+
+    return {"kp": latest, "status": status}
