@@ -88,7 +88,7 @@ def render():
         </style>
     """, unsafe_allow_html=True)
 
-    st.markdown("<h3>Geomagnetic Storm Forecast</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='font-size:18px; font-weight:600;'>Geomagnetic Storm Forecast</h3>", unsafe_allow_html=True)
 
     col1, col2 = st.columns(2)
 
@@ -124,7 +124,7 @@ def render():
             st.warning("Space weather unavailable")
 
     with col2:
-        st.markdown("<h3 style='font-size:16px;'>Top 10 Countries by Active LEO Satellites</h3>", unsafe_allow_html=True)
+        st.markdown("<h3 style='font-size:18px; font-weight:600;'>Top 10 Countries by Active LEO Satellites</h3>", unsafe_allow_html=True)
 
         try:
             labels, values, err = get_active_leo_by_country()
@@ -135,7 +135,7 @@ def render():
             elif values:
                 fig2, ax2 = plt.subplots(figsize=(5.2, 2.4))
 
-                bars = ax2.bar(labels, values)
+                ax2.bar(labels, values, color="#4CAF50")
 
                 ax2.set_ylabel("Satellites", fontsize=8)
                 ax2.tick_params(axis="x", rotation=45, labelsize=8)
