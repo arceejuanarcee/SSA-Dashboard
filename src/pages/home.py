@@ -15,58 +15,48 @@ def tile(title, image_path, key):
     img = get_base64(image_path)
 
     st.markdown(f"""
-    <style>
-    .tile-wrapper-{key} {{
-        position: relative;
-        height: 160px;
-        margin-bottom: 16px;
-    }}
+    <a href="?page={key}" style="text-decoration:none;">
+        <div style="
+            height:160px;
+            border-radius:12px;
+            background-image:url('data:image/jpg;base64,{img}');
+            background-size:cover;
+            background-position:center;
+            position:relative;
+            overflow:hidden;
+            margin-bottom:12px;
+        ">
+            <div style="
+                position:absolute;
+                inset:0;
+                background:linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.85));
+            "></div>
 
-    .tile-{key} {{
-        height: 100%;
-        border-radius: 12px;
-        background-image: url("data:image/jpg;base64,{img}");
-        background-size: cover;
-        background-position: center;
-        position: relative;
-        overflow: hidden;
-    }}
-
-    .overlay-{key} {{
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.85));
-    }}
-
-    .tile-title-{key} {{
-        position: absolute;
-        bottom: 12px;
-        left: 16px;
-        color: white;
-        font-size: 16px;
-        font-weight: 500;
-    }}
-    </style>
-
-    <div class="tile-wrapper-{key}">
-        <div class="tile-{key}">
-            <div class="overlay-{key}">
-                <div class="tile-title-{key}">{title}</div>
+            <div style="
+                position:absolute;
+                bottom:12px;
+                left:16px;
+                color:white;
+                font-size:16px;
+                font-weight:500;
+            ">
+                {title}
             </div>
         </div>
-    </div>
+    </a>
     """, unsafe_allow_html=True)
-
-    if st.button("", key=f"btn_{key}"):
-        st.session_state["page"] = key
 
 
 def render():
     st.markdown("""
     <style>
     .block-container {
-        padding-top: 0.5rem !important;
-        padding-bottom: 0rem;
+        padding-top: 0.3rem !important;
+        padding-bottom: 0rem !important;
+    }
+    h3 {
+        margin-top: 0rem !important;
+        margin-bottom: 0.3rem !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -74,14 +64,12 @@ def render():
     col1, col2 = st.columns(2)
 
     with col1:
-        st.subheader("Geomagnetic Storm Forecast")
+        st.markdown("<h3>Geomagnetic Storm Forecast</h3>", unsafe_allow_html=True)
 
         try:
             days, values = get_daily_kp()
 
-            if not values:
-                st.warning("No Kp data available")
-            else:
+            if values:
                 fig, ax = plt.subplots(figsize=(6, 3))
 
                 bars = ax.bar(days, values)
@@ -98,7 +86,7 @@ def render():
 
                 ax.set_ylabel("Kp Index")
                 ax.set_ylim(0, 9)
-                ax.tick_params(axis="x", rotation=20)
+                ax.tick_params(axis="x", rotation=15)
 
                 for i, v in enumerate(values):
                     ax.text(i, v + 0.2, f"{v:.1f}", ha="center", fontsize=8)
@@ -114,11 +102,14 @@ def render():
                 plt.tight_layout()
                 st.pyplot(fig)
 
+            else:
+                st.warning("No Kp data available")
+
         except Exception as e:
             st.error(str(e))
 
     with col2:
-        st.subheader("Top 10 Countries by Active LEO Satellites")
+        st.markdown("<h3>Top 10 Countries by Active LEO Satellites</h3>", unsafe_allow_html=True)
 
         labels, values, error = get_active_leo_by_country()
 
@@ -128,6 +119,7 @@ def render():
             fig2, ax2 = plt.subplots(figsize=(6, 3))
 
             ax2.barh(labels, values)
+
             ax2.set_xlabel("Number of Satellites")
             ax2.set_xlim(0, max(values) * 1.2)
 
@@ -137,7 +129,7 @@ def render():
             plt.tight_layout()
             st.pyplot(fig2)
 
-    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("<div style='margin-top:10px;'></div>", unsafe_allow_html=True)
 
     t1, t2 = st.columns(2)
 
