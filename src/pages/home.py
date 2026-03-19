@@ -3,7 +3,7 @@ import base64
 import matplotlib.pyplot as plt
 
 from src.services.space_weather_api import get_daily_kp
-from src.services.spacetrack_api import get_active_leo_by_country
+from src.services.celestrak_api_api import get_active_leo_by_country
 
 
 def get_base64(path):

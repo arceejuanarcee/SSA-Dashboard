@@ -1,85 +1,65 @@
-import requests
+import json
+import os
 from collections import Counter
 import streamlit as st
 
-BASE_URL = "https://www.space-track.org"
+LOCAL_PATH = "data/satcat.json"
+
+
+def infer_country(name):
+    name = name.upper()
+
+    if "STARLINK" in name:
+        return "US"
+    if "ONEWEB" in name:
+        return "UK"
+    if "COSMOS" in name:
+        return "RU"
+    if "YAOGAN" in name or "BEIDOU" in name:
+        return "CN"
+
+    return "OTHER"
 
 
 @st.cache_data(ttl=600)
-def get_active_leo_satellites_by_country(identity, password, limit=10):
+def get_active_leo_by_country(limit=10):
+    if not os.path.exists(LOCAL_PATH):
+        return [], [], "satcat.json not found in data folder"
+
     try:
-        session = requests.Session()
-
-        headers = {
-            "User-Agent": "Mozilla/5.0",
-            "Referer": "https://www.space-track.org/auth/login"
-        }
-
-        login_resp = session.post(
-            BASE_URL + "/ajaxauth/login",
-            data={
-                "identity": identity,
-                "password": password
-            },
-            headers=headers,
-            timeout=30
-        )
-
-        if login_resp.status_code != 200:
-            return [], [], f"Login failed: {login_resp.status_code}"
-
-        if "failed" in login_resp.text.lower():
-            return [], [], "Invalid credentials"
-
-        query_url = (
-            BASE_URL +
-            "/basicspacedata/query/class/satcat/"
-            "CURRENT/Y/"
-            "format/json"
-        )
-
-        resp = session.get(query_url, headers=headers, timeout=30)
-
-        if resp.status_code != 200:
-            return [], [], f"Query failed: {resp.status_code}"
-
-        if "<html" in resp.text.lower():
-            return [], [], "Blocked by Space-Track"
-
-        data = resp.json()
-
-        if not isinstance(data, list) or len(data) == 0:
-            return [], [], "Empty dataset"
-
-        # 🔥 SIMPLE + ROBUST LEO FILTER
-        filtered = []
-
-        for obj in data:
-            try:
-                mm = float(obj.get("MEAN_MOTION", 0))
-
-                # LEO condition ONLY
-                if mm > 11:
-                    filtered.append(obj)
-
-            except:
-                continue
-
-        if len(filtered) == 0:
-            return [], [], "No satellites passed LEO filter (unexpected)"
-
-        countries = [
-            obj.get("COUNTRY") or "UNK"
-            for obj in filtered
-        ]
-
-        counter = Counter(countries)
-        top = counter.most_common(limit)
-
-        labels = [c[0] for c in top]
-        values = [c[1] for c in top]
-
-        return labels, values, None
-
+        with open(LOCAL_PATH, "r") as f:
+            data = json.load(f)
     except Exception as e:
-        return [], [], str(e)
+        return [], [], f"Failed to load satcat.json: {e}"
+
+    if not isinstance(data, list) or len(data) == 0:
+        return [], [], "Empty dataset"
+
+    countries = []
+
+    for obj in data:
+        try:
+            mm = float(obj.get("MEAN_MOTION", 0))
+            name = obj.get("OBJECT_NAME", "")
+
+            if mm > 11:
+                country = obj.get("COUNTRY")
+
+                if not country or country == "UNK":
+                    country = infer_country(name)
+
+                countries.append(country)
+
+        except:
+            continue
+
+    if not countries:
+        return [], [], "No LEO satellites after filtering"
+
+    counter = Counter(countries)
+    top = counter.most_common(limit)
+
+    labels = [c[0] for c in top]
+    values = [c[1] for c in top]
+
+    return labels, values, None
