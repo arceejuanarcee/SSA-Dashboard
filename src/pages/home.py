@@ -15,44 +15,37 @@ def tile(title, image_path, key):
     img = get_base64(image_path)
 
     st.markdown(f"""
-    <style>
-    .tile-{key} {{
-        height:160px;
-        border-radius:12px;
-        background-image:url("data:image/jpg;base64,{img}");
-        background-size:cover;
-        background-position:center;
-        position:relative;
-        overflow:hidden;
-        margin-bottom:12px;
-        cursor:pointer;
-    }}
+    <a href="?page={key}" style="text-decoration:none;">
+        <div style="
+            height:160px;
+            border-radius:12px;
+            background-image:url('data:image/jpg;base64,{img}');
+            background-size:cover;
+            background-position:center;
+            position:relative;
+            overflow:hidden;
+            margin-bottom:12px;
+            cursor:pointer;
+        ">
+            <div style="
+                position:absolute;
+                inset:0;
+                background:linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.85));
+            "></div>
 
-    .overlay-{key} {{
-        position:absolute;
-        inset:0;
-        background:linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.85));
-    }}
-
-    .title-{key} {{
-        position:absolute;
-        bottom:12px;
-        left:16px;
-        color:white;
-        font-size:16px;
-        font-weight:500;
-    }}
-    </style>
-
-    <div class="tile-{key}">
-        <div class="overlay-{key}">
-            <div class="title-{key}">{title}</div>
+            <div style="
+                position:absolute;
+                bottom:12px;
+                left:16px;
+                color:white;
+                font-size:16px;
+                font-weight:500;
+            ">
+                {title}
+            </div>
         </div>
-    </div>
+    </a>
     """, unsafe_allow_html=True)
-
-    if st.button("", key=key):
-        st.session_state["page"] = key
 
 
 def render():
@@ -79,6 +72,7 @@ def render():
 
             if values:
                 fig, ax = plt.subplots(figsize=(6, 3))
+
                 bars = ax.bar(days, values)
 
                 for i, v in enumerate(values):
@@ -108,8 +102,6 @@ def render():
 
                 plt.tight_layout()
                 st.pyplot(fig)
-            else:
-                st.warning("No Kp data available")
 
         except Exception as e:
             st.error(str(e))
@@ -123,6 +115,7 @@ def render():
             st.error(error)
         elif values:
             fig2, ax2 = plt.subplots(figsize=(6, 3))
+
             ax2.barh(labels, values)
             ax2.set_xlabel("Number of Satellites")
             ax2.set_xlim(0, max(values) * 1.2)
