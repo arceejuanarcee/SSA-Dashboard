@@ -2,7 +2,11 @@ import requests
 from collections import Counter
 import streamlit as st
 
-URL = "https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=json"
+URLS = [
+    "https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=json",
+    "https://celestrak.org/NORAD/elements/gp.php?GROUP=leo&FORMAT=json",
+    "https://celestrak.org/NORAD/elements/active.txt"
+]
 
 
 def infer_country(name):
@@ -16,48 +20,73 @@ def infer_country(name):
         return "RU"
     if "YAOGAN" in name or "BEIDOU" in name:
         return "CN"
-    if "IRIDIUM" in name:
-        return "US"
-    if "GALILEO" in name:
-        return "EU"
 
     return "OTHER"
 
 
 @st.cache_data(ttl=600)
 def get_active_leo_by_country(limit=10):
-    try:
-        resp = requests.get(URL, timeout=20)
+    data = None
+    last_error = None
 
-        if resp.status_code != 200:
-            return [], [], f"Fetch failed: {resp.status_code}"
+    for url in URLS:
+        try:
+            resp = requests.get(url, timeout=8)
 
-        data = resp.json()
-
-        countries = []
-
-        for obj in data:
-            try:
-                mm = float(obj.get("MEAN_MOTION", 0))
-                name = obj.get("OBJECT_NAME", "")
-
-                if mm > 11:
-                    country = infer_country(name)
-                    countries.append(country)
-
-            except:
+            if resp.status_code != 200:
+                last_error = f"{url} failed ({resp.status_code})"
                 continue
 
-        if not countries:
-            return [], [], "No valid data"
+            if "json" in url:
+                data = resp.json()
 
-        counter = Counter(countries)
-        top = counter.most_common(limit)
+            else:
+                # fallback parsing (TLE text)
+                lines = resp.text.splitlines()
+                data = []
 
-        labels = [c[0] for c in top]
-        values = [c[1] for c in top]
+                for i in range(0, len(lines), 3):
+                    try:
+                        name = lines[i].strip()
+                        line2 = lines[i+2]
+                        mm = float(line2[52:63])
+                        data.append({
+                            "OBJECT_NAME": name,
+                            "MEAN_MOTION": mm
+                        })
+                    except:
+                        continue
 
-        return labels, values, None
+            if data:
+                break
 
-    except Exception as e:
-        return [], [], str(e)
+        except Exception as e:
+            last_error = str(e)
+            continue
+
+    if not data:
+        return [], [], f"All sources failed: {last_error}"
+
+    countries = []
+
+    for obj in data:
+        try:
+            mm = float(obj.get("MEAN_MOTION", 0))
+            name = obj.get("OBJECT_NAME", "")
+
+            if mm > 11:
+                countries.append(infer_country(name))
+
+        except:
+            continue
+
+    if not countries:
+        return [], [], "No valid LEO data"
+
+    counter = Counter(countries)
+    top = counter.most_common(limit)
+
+    labels = [c[0] for c in top]
+    values = [c[1] for c in top]
+
+    return labels, values, None
