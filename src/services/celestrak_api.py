@@ -2,44 +2,38 @@ import requests
 from collections import Counter
 import streamlit as st
 
-URL = "https://celestrak.org/pub/satcat.csv"
+URL = "https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=json"
 
 
 @st.cache_data(ttl=600)
 def get_active_leo_by_country(limit=10):
     try:
-        resp = requests.get(URL, timeout=30)
+        resp = requests.get(URL, timeout=20)
 
         if resp.status_code != 200:
             return [], [], f"Fetch failed: {resp.status_code}"
 
-        lines = resp.text.splitlines()
+        data = resp.json()
 
-        header = lines[0].split(",")
-
-        idx_country = header.index("COUNTRY")
-        idx_period = header.index("PERIOD")
-        idx_status = header.index("STATUS")
+        if not isinstance(data, list) or len(data) == 0:
+            return [], [], "Empty dataset"
 
         countries = []
 
-        for row in lines[1:]:
-            cols = row.split(",")
-
+        for obj in data:
             try:
-                status = cols[idx_status]
-                period = float(cols[idx_period])
+                mm = float(obj.get("MEAN_MOTION", 0))
 
-                # ACTIVE + LEO filter
-                if status == "Active" and period > 0 and period < 225:
-                    country = cols[idx_country] or "UNK"
+                # LEO filter
+                if mm > 11:
+                    country = obj.get("COUNTRY") or "UNK"
                     countries.append(country)
 
             except:
                 continue
 
         if not countries:
-            return [], [], "No data after filtering"
+            return [], [], "No LEO satellites found"
 
         counter = Counter(countries)
         top = counter.most_common(limit)
