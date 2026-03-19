@@ -1,56 +1,57 @@
-import requests
 import json
+import os
 from collections import Counter
 import streamlit as st
-import os
 
 LOCAL_PATH = "data/satcat.json"
-
-URL = "https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=json"
 
 
 def infer_country(name):
     name = name.upper()
 
-    if "STARLINK" in name:
-        return "US"
-    if "ONEWEB" in name:
-        return "UK"
-    if "COSMOS" in name:
-        return "RU"
-    if "YAOGAN" in name or "BEIDOU" in name:
-        return "CN"
+    mapping = {
+        "STARLINK": "US",
+        "GPS": "US",
+        "NAVSTAR": "US",
+        "USA": "US",
 
-    return "OTHER"
+        "COSMOS": "RU",
+        "GLONASS": "RU",
+
+        "YAOGAN": "CN",
+        "BEIDOU": "CN",
+        "TIAN": "CN",
+
+        "ONEWEB": "UK",
+
+        "GSAT": "IN",
+        "IRNSS": "IN",
+
+        "QZS": "JP",
+
+        "KOREASAT": "KR",
+
+        "SES": "LU",
+        "EUTELSAT": "EU"
+    }
+
+    for key, country in mapping.items():
+        if key in name:
+            return country
+
+    return None
 
 
 @st.cache_data(ttl=600)
 def get_active_leo_by_country(limit=10):
-    data = None
+    if not os.path.exists(LOCAL_PATH):
+        return [], [], "satcat.json not found"
 
-    # 🔥 1. LOAD LOCAL FIRST (THIS FIXES YOUR ISSUE)
-    if os.path.exists(LOCAL_PATH):
-        try:
-            with open(LOCAL_PATH, "r") as f:
-                data = json.load(f)
-        except Exception as e:
-            return [], [], f"Local file error: {e}"
-
-    # 🔥 2. ONLY TRY API IF LOCAL NOT AVAILABLE
-    if data is None:
-        try:
-            resp = requests.get(URL, timeout=8)
-
-            if resp.status_code != 200:
-                return [], [], f"Fetch failed: {resp.status_code}"
-
-            data = resp.json()
-
-        except Exception as e:
-            return [], [], f"API failed and no local fallback: {e}"
-
-    if not isinstance(data, list) or len(data) == 0:
-        return [], [], "Dataset empty"
+    try:
+        with open(LOCAL_PATH, "r") as f:
+            data = json.load(f)
+    except Exception as e:
+        return [], [], str(e)
 
     countries = []
 
@@ -62,16 +63,17 @@ def get_active_leo_by_country(limit=10):
             if mm > 11:
                 country = obj.get("COUNTRY")
 
-                if not country:
+                if not country or country in ["UNK", ""]:
                     country = infer_country(name)
 
-                countries.append(country)
+                if country:
+                    countries.append(country)
 
         except:
             continue
 
     if not countries:
-        return [], [], "No valid LEO data"
+        return [], [], "No valid LEO satellites"
 
     counter = Counter(countries)
     top = counter.most_common(limit)
