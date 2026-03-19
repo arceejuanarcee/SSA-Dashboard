@@ -1,51 +1,32 @@
 import streamlit as st
-import base64
 import matplotlib.pyplot as plt
 
 from src.services.space_weather_api import get_daily_kp
 from src.services.spacetrack_api import get_active_leo_by_country
 
 
-def get_base64(path):
-    with open(path, "rb") as f:
-        return base64.b64encode(f.read()).decode()
-
-
 def tile(title, image_path, key):
-    img = get_base64(image_path)
+    container = st.container()
 
-    st.markdown(f"""
-    <a href="?page={key}" style="text-decoration:none;">
+    with container:
+        st.image(image_path, use_container_width=True)
+
+        st.markdown(f"""
         <div style="
-            height:160px;
-            border-radius:12px;
-            background-image:url('data:image/jpg;base64,{img}');
-            background-size:cover;
-            background-position:center;
             position:relative;
-            overflow:hidden;
-            margin-bottom:12px;
-            cursor:pointer;
+            margin-top:-60px;
+            padding-left:12px;
+            padding-bottom:8px;
+            color:white;
+            font-weight:500;
+            font-size:16px;
         ">
-            <div style="
-                position:absolute;
-                inset:0;
-                background:linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.85));
-            "></div>
-
-            <div style="
-                position:absolute;
-                bottom:12px;
-                left:16px;
-                color:white;
-                font-size:16px;
-                font-weight:500;
-            ">
-                {title}
-            </div>
+            {title}
         </div>
-    </a>
-    """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
+
+        if st.button("Open", key=key):
+            st.session_state["page"] = key
 
 
 def render():
@@ -55,24 +36,19 @@ def render():
         padding-top: 0.2rem !important;
         padding-bottom: 0rem !important;
     }
-    h3 {
-        margin-top: 0rem !important;
-        margin-bottom: 0.3rem !important;
-    }
     </style>
     """, unsafe_allow_html=True)
 
     col1, col2 = st.columns(2)
 
     with col1:
-        st.markdown("<h3>Geomagnetic Storm Forecast</h3>", unsafe_allow_html=True)
+        st.subheader("Geomagnetic Storm Forecast")
 
         try:
             days, values = get_daily_kp()
 
             if values:
                 fig, ax = plt.subplots(figsize=(6, 3))
-
                 bars = ax.bar(days, values)
 
                 for i, v in enumerate(values):
@@ -107,7 +83,7 @@ def render():
             st.error(str(e))
 
     with col2:
-        st.markdown("<h3>Top 10 Countries by Active LEO Satellites</h3>", unsafe_allow_html=True)
+        st.subheader("Top 10 Countries by Active LEO Satellites")
 
         labels, values, error = get_active_leo_by_country()
 
@@ -115,8 +91,8 @@ def render():
             st.error(error)
         elif values:
             fig2, ax2 = plt.subplots(figsize=(6, 3))
-
             ax2.barh(labels, values)
+
             ax2.set_xlabel("Number of Satellites")
             ax2.set_xlim(0, max(values) * 1.2)
 
@@ -126,7 +102,7 @@ def render():
             plt.tight_layout()
             st.pyplot(fig2)
 
-    st.markdown("<div style='margin-top:8px;'></div>", unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
 
     t1, t2 = st.columns(2)
 
