@@ -15,43 +15,51 @@ def tile(title, image_path, key):
     img = get_base64(image_path)
 
     st.markdown(f"""
-    <a href="?page={key}" style="text-decoration:none;">
-        <div style="
-            height:160px;
-            border-radius:12px;
-            background-image:url('data:image/jpg;base64,{img}');
-            background-size:cover;
-            background-position:center;
-            position:relative;
-            overflow:hidden;
-            margin-bottom:12px;
-        ">
-            <div style="
-                position:absolute;
-                inset:0;
-                background:linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.85));
-            "></div>
+    <style>
+    .tile-{key} {{
+        height:160px;
+        border-radius:12px;
+        background-image:url("data:image/jpg;base64,{img}");
+        background-size:cover;
+        background-position:center;
+        position:relative;
+        overflow:hidden;
+        margin-bottom:12px;
+        cursor:pointer;
+    }}
 
-            <div style="
-                position:absolute;
-                bottom:12px;
-                left:16px;
-                color:white;
-                font-size:16px;
-                font-weight:500;
-            ">
-                {title}
-            </div>
+    .overlay-{key} {{
+        position:absolute;
+        inset:0;
+        background:linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.85));
+    }}
+
+    .title-{key} {{
+        position:absolute;
+        bottom:12px;
+        left:16px;
+        color:white;
+        font-size:16px;
+        font-weight:500;
+    }}
+    </style>
+
+    <div class="tile-{key}">
+        <div class="overlay-{key}">
+            <div class="title-{key}">{title}</div>
         </div>
-    </a>
+    </div>
     """, unsafe_allow_html=True)
+
+    if st.button("", key=key):
+        st.session_state["page"] = key
 
 
 def render():
     st.markdown("""
     <style>
     .block-container {
-        padding-top: 0.3rem !important;
+        padding-top: 0.2rem !important;
         padding-bottom: 0rem !important;
     }
     h3 {
@@ -71,7 +79,6 @@ def render():
 
             if values:
                 fig, ax = plt.subplots(figsize=(6, 3))
-
                 bars = ax.bar(days, values)
 
                 for i, v in enumerate(values):
@@ -101,7 +108,6 @@ def render():
 
                 plt.tight_layout()
                 st.pyplot(fig)
-
             else:
                 st.warning("No Kp data available")
 
@@ -117,9 +123,7 @@ def render():
             st.error(error)
         elif values:
             fig2, ax2 = plt.subplots(figsize=(6, 3))
-
             ax2.barh(labels, values)
-
             ax2.set_xlabel("Number of Satellites")
             ax2.set_xlim(0, max(values) * 1.2)
 
@@ -129,7 +133,7 @@ def render():
             plt.tight_layout()
             st.pyplot(fig2)
 
-    st.markdown("<div style='margin-top:10px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='margin-top:8px;'></div>", unsafe_allow_html=True)
 
     t1, t2 = st.columns(2)
 
