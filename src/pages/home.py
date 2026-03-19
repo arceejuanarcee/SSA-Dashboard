@@ -205,7 +205,7 @@ def render():
     t1, t2 = st.columns(2)
 
     with t1:
-        tile("Space Weather Forecast", "graphics/space_weather.jpg", "space_weather")
+        tile("Space Weather Monitoring", "graphics/space_weather.jpg", "space_weather")
 
     with t2:
         tile("Orbital Debris Reentry", "graphics/reentry.jpg", "reentry")
@@ -213,7 +213,7 @@ def render():
     t3, t4 = st.columns(2)
 
     with t3:
-        tile("CDM", "graphics/cdm.png", "cdm")
+        tile("Conjunction Analysis", "graphics/cdm.png", "cdm")
 
     with t4:
         tile("Rocket Launch Monitoring", "graphics/rocket.jpg", "rocket")
