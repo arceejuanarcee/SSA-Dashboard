@@ -3,7 +3,7 @@ import base64
 import matplotlib.pyplot as plt
 
 from src.services.space_weather_api import get_daily_kp
-from src.services.spacetrack_api import get_active_leo_satellites_by_country
+from src.services.celestrak_api import get_active_leo_by_country
 
 
 def get_base64(path):
@@ -127,10 +127,7 @@ def render():
         st.markdown("<h3 style='font-size:16px;'>Top 10 Countries by Active LEO Satellites</h3>", unsafe_allow_html=True)
 
         try:
-            identity = st.secrets["spacetrack"]["identity"]
-            password = st.secrets["spacetrack"]["password"]
-
-            labels, values, err = get_active_leo_satellites_by_country(identity, password)
+            labels, values, err = get_active_leo_by_country()
 
             if err:
                 st.error(err)
@@ -154,7 +151,7 @@ def render():
                 st.warning("No data available")
 
         except Exception as e:
-            st.error(f"Space-Track error: {e}")
+            st.error(f"CelesTrak error: {e}")
 
     spacer("2.5rem")
 
