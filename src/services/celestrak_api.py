@@ -4,7 +4,7 @@ from collections import Counter
 import streamlit as st
 import os
 
-LOCAL_PATH = "data/satcat.json"
+LOCAL_PATH = "data/sat_data.json"
 
 URL = "https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=json"
 

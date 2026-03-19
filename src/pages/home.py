@@ -3,7 +3,7 @@ import base64
 import matplotlib.pyplot as plt
 
 from src.services.space_weather_api import get_daily_kp
-from src.services.celestrak_api import get_active_leo_by_country
+from src.services.spacetrack_api import get_active_leo_by_country
 
 
 def get_base64(path):
@@ -83,75 +83,88 @@ def render():
 
         h3 {
             margin-top: 0rem !important;
-            margin-bottom: 0.2rem !important;
+            margin-bottom: 0.4rem !important;
+            font-size: 18px !important;
         }
         </style>
     """, unsafe_allow_html=True)
 
-    st.markdown("<h3 style='font-size:18px; font-weight:600;'>Geomagnetic Storm Forecast</h3>", unsafe_allow_html=True)
-
     col1, col2 = st.columns(2)
 
     with col1:
+        st.markdown("<h3>Geomagnetic Storm Forecast</h3>", unsafe_allow_html=True)
+
         try:
             days, values = get_daily_kp()
 
             if values:
-                fig, ax = plt.subplots(figsize=(5.2, 2.4))
+                fig, ax = plt.subplots(figsize=(6, 3))
+
                 bars = ax.bar(days, values)
 
-                for i, v in enumerate(values):
+                colors = []
+                for v in values:
                     if v < 3:
-                        bars[i].set_color("green")
+                        colors.append("green")
                     elif v < 5:
-                        bars[i].set_color("yellow")
+                        colors.append("yellow")
                     elif v < 7:
-                        bars[i].set_color("orange")
+                        colors.append("orange")
                     else:
-                        bars[i].set_color("red")
+                        colors.append("red")
+
+                for bar, color in zip(bars, colors):
+                    bar.set_color(color)
 
                 ax.set_ylim(0, 9)
-                ax.tick_params(axis="x", labelsize=8)
+                ax.set_ylabel("Kp Index (Geomagnetic Activity)", fontsize=10)
+
+                ax.tick_params(axis="x", labelsize=9, rotation=0)
+                ax.tick_params(axis="y", labelsize=9)
 
                 for i, v in enumerate(values):
-                    ax.text(i, v + 0.1, f"{v:.1f}", ha="center", fontsize=8)
+                    ax.text(i, v + 0.2, f"{v:.1f}", ha="center", fontsize=8)
 
-                plt.subplots_adjust(top=0.95, bottom=0.2)
+                from matplotlib.patches import Patch
+                legend_elements = [
+                    Patch(facecolor="green", label="Quiet (0–2)"),
+                    Patch(facecolor="yellow", label="Unsettled (3–4)"),
+                    Patch(facecolor="orange", label="Active/Storm (5–6)"),
+                    Patch(facecolor="red", label="Severe/Extreme (7–9)")
+                ]
+                ax.legend(handles=legend_elements, fontsize=7, loc="upper left")
 
-                st.pyplot(fig, use_container_width=True)
+                plt.tight_layout()
+                st.pyplot(fig)
 
         except Exception:
             st.warning("Space weather unavailable")
 
     with col2:
-        st.markdown("<h3 style='font-size:18px; font-weight:600;'>Top 10 Countries by Active LEO Satellites</h3>", unsafe_allow_html=True)
+        st.markdown("<h3>Top 10 Countries by Active LEO Satellites</h3>", unsafe_allow_html=True)
 
         try:
-            labels, values, err = get_active_leo_by_country()
+            labels, values, error = get_active_leo_by_country()
 
-            if err:
-                st.error(err)
-
+            if error:
+                st.error(error)
             elif values:
-                fig2, ax2 = plt.subplots(figsize=(5.2, 2.4))
+                fig2, ax2 = plt.subplots(figsize=(6, 3))
 
-                ax2.bar(labels, values, color="#4CAF50")
+                ax2.barh(labels, values)
 
-                ax2.set_ylabel("Satellites", fontsize=8)
-                ax2.tick_params(axis="x", rotation=45, labelsize=8)
+                ax2.set_xlabel("Number of Active LEO Satellites", fontsize=10)
+                ax2.tick_params(axis="x", labelsize=9)
+                ax2.tick_params(axis="y", labelsize=9)
 
                 for i, v in enumerate(values):
-                    ax2.text(i, v, str(v), ha="center", fontsize=7)
+                    ax2.text(v + max(values)*0.01, i, str(v), va="center", fontsize=8)
 
-                plt.subplots_adjust(top=0.9, bottom=0.3)
+                plt.tight_layout()
+                st.pyplot(fig2)
 
-                st.pyplot(fig2, use_container_width=True)
-
-            else:
-                st.warning("No data available")
-
-        except Exception as e:
-            st.error(f"CelesTrak error: {e}")
+        except Exception:
+            st.warning("Satellite data unavailable")
 
     spacer("2.5rem")
 
