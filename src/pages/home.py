@@ -76,6 +76,31 @@ def tile(title, image_path, page_key, height=220):
     )
 
 
+def clean_rocket_name(text):
+    if not text:
+        return "TBD"
+
+    text = text.replace("\n", " ").strip()
+
+    keywords_to_remove = [
+        "Unknown Payload",
+        "Demo Flight",
+        "Chang'e 7",
+        "Chang'e",
+    ]
+
+    for k in keywords_to_remove:
+        text = text.replace(k, "").strip()
+
+    import re
+    match = re.search(r"(Long March\s?[0-9A-Za-z\/\-]+)", text)
+
+    if match:
+        return match.group(1)
+
+    return text
+
+
 def render():
     st.markdown(
         """
@@ -153,6 +178,7 @@ def render():
 
                 plt.tight_layout()
                 st.pyplot(fig, width="stretch")
+
             else:
                 st.warning("No Kp data available.")
 
@@ -173,8 +199,6 @@ def render():
                 ax2.barh(labels, values)
                 ax2.set_xlabel("Number of Satellites")
                 ax2.set_xlim(0, max(values) * 1.2)
-                ax2.tick_params(axis="x", labelsize=9)
-                ax2.tick_params(axis="y", labelsize=9)
 
                 for i, v in enumerate(values):
                     ax2.text(v + max(values) * 0.02, i, str(v), va="center", fontsize=8)
@@ -197,65 +221,34 @@ def render():
 
             if error:
                 st.error(error)
+
             elif launches:
                 fig3, ax3 = plt.subplots(figsize=(6, 3))
                 ax3.set_facecolor("white")
                 fig3.patch.set_facecolor("white")
                 ax3.axis("off")
 
-                total = min(len(launches), 4)
                 top_y = 0.88
                 row_gap = 0.22
 
                 for i, launch in enumerate(launches[:4]):
                     y = top_y - i * row_gap
 
-                    rocket = launch.get("rocket", "TBD")
-                    date = launch.get("date", "TBD") or "TBD"
-                    site = launch.get("site", "TBD") or "TBD"
+                    rocket = clean_rocket_name(launch.get("rocket"))
+                    date = launch.get("date") or "TBD"
+                    site = launch.get("site") or "TBD"
 
-                    ax3.text(
-                        0.03,
-                        y,
-                        rocket,
-                        fontsize=11,
-                        fontweight="bold",
-                        color="black",
-                        transform=ax3.transAxes,
-                        va="top",
-                    )
+                    ax3.text(0.03, y, rocket, fontsize=11, fontweight="bold", transform=ax3.transAxes)
+                    ax3.text(0.03, y - 0.07, date, fontsize=9, transform=ax3.transAxes)
+                    ax3.text(0.03, y - 0.13, site, fontsize=8, color="#444444", transform=ax3.transAxes)
 
-                    ax3.text(
-                        0.03,
-                        y - 0.07,
-                        date,
-                        fontsize=9,
-                        color="black",
-                        transform=ax3.transAxes,
-                        va="top",
-                    )
-
-                    ax3.text(
-                        0.03,
-                        y - 0.13,
-                        site,
-                        fontsize=8,
-                        color="#444444",
-                        transform=ax3.transAxes,
-                        va="top",
-                    )
-
-                    if i < total - 1:
-                        ax3.plot(
-                            [0.03, 0.97],
-                            [y - 0.165, y - 0.165],
-                            transform=ax3.transAxes,
-                            color="#dddddd",
-                            linewidth=0.8,
-                        )
+                    if i < len(launches[:4]) - 1:
+                        ax3.plot([0.03, 0.97], [y - 0.165, y - 0.165],
+                                 transform=ax3.transAxes, color="#dddddd", linewidth=0.8)
 
                 plt.tight_layout()
                 st.pyplot(fig3, width="stretch")
+
             else:
                 st.warning("No upcoming launches")
 
@@ -264,8 +257,6 @@ def render():
 
     with launch_col2:
         st.empty()
-
-    st.markdown("<div style='margin-top:0.3rem;'></div>", unsafe_allow_html=True)
 
     t1, t2 = st.columns(2)
 
