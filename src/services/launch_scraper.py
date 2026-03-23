@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 
+
 URL = "https://www.spacelaunchschedule.com/category/china-aerospace-science-and-technology-corporation/"
 
 VALID_SITES = [
@@ -8,9 +9,9 @@ VALID_SITES = [
     "Naro Space Center",
     "Wenchang Space Launch Site",
     "Hainan Commercial Space Launch Site",
-    "Hainan International Commercial Launch Center",
-    "Jiuquan Satellite Launch Center",
+    "Hainan International Commercial Launch Center"
 ]
+
 
 def fetch_china_launches():
     try:
@@ -18,53 +19,50 @@ def fetch_china_launches():
             "User-Agent": "Mozilla/5.0"
         }
 
-        res = requests.get(URL, headers=headers, timeout=15)
+        res = requests.get(URL, headers=headers, timeout=10)
         soup = BeautifulSoup(res.text, "html.parser")
 
         launches = []
 
-        cards = soup.find_all("div", class_="launch-list-thumbnail")
+        cards = soup.select("div.launch-list-thumbnail")
 
-        if not cards:
-            return [], "Parser failed: no launch cards found"
-
-        for c in cards:
+        for card in cards:
             try:
-                title_block = c.find("h2", class_="entry-title")
-                if not title_block:
-                    continue
+                title_tag = card.select_one("h2.entry-title")
+                rocket = title_tag.get_text(strip=True).replace("\n", " ") if title_tag else "Unknown"
 
-                payload = title_block.contents[0].strip()
+                time_tag = card.select_one("time.launchDateTime")
+                if time_tag:
+                    date = time_tag.get_text(" ", strip=True)
+                else:
+                    date = "TBD"
 
-                rocket_tag = title_block.find("span")
-                rocket = rocket_tag.get_text(strip=True) if rocket_tag else payload
+                # ✅ FIX: Correct site extraction
+                site_tag = card.select_one("div.col.h6.mb-0.pt-2")
+                site = site_tag.get_text(strip=True) if site_tag else None
 
-                time_tag = c.find("time", class_="launchDateTime")
-                date = time_tag.get_text(strip=True) if time_tag else "TBD"
-
-                location_divs = c.find_all("div", class_="col")
-                location = ""
-                for div in location_divs:
-                    text = div.get_text(strip=True)
-                    if "Launch Center" in text:
-                        location = text
-                        break
-
-                if not any(site in location for site in VALID_SITES):
-                    continue
+                # Filter by valid sites
+                if site:
+                    if not any(valid in site for valid in VALID_SITES):
+                        continue
 
                 launches.append({
                     "rocket": rocket,
-                    "date": date
+                    "date": clean_time(date),
+                    "site": site if site else "TBD"
                 })
 
-                if len(launches) >= 5:
-                    break
-
-            except:
+            except Exception:
                 continue
 
-        return launches, None
+        return launches[:5], None
 
     except Exception as e:
         return [], str(e)
+
+
+def clean_time(text):
+    text = text.replace("GMT+8", "").strip()
+    text = text.replace("•", "-")
+    text = " ".join(text.split())
+    return text
