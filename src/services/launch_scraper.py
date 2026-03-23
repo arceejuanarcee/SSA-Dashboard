@@ -9,6 +9,7 @@ VALID_SITES = [
     "Wenchang Space Launch Site",
     "Hainan Commercial Space Launch Site",
     "Hainan International Commercial Launch Center",
+    "Jiuquan Satellite Launch Center",
 ]
 
 def fetch_china_launches():
@@ -22,21 +23,32 @@ def fetch_china_launches():
 
         launches = []
 
-        cards = soup.find_all("div", class_="launch")
+        cards = soup.find_all("div", class_="launch-list-thumbnail")
 
         if not cards:
             return [], "Parser failed: no launch cards found"
 
         for c in cards:
             try:
-                title = c.find("div", class_="mission").get_text(strip=True)
-                rocket = c.find("div", class_="rocket").get_text(strip=True)
+                title_block = c.find("h2", class_="entry-title")
+                if not title_block:
+                    continue
 
-                date_tag = c.find("div", class_="date")
-                date = date_tag.get_text(strip=True) if date_tag else "TBD"
+                payload = title_block.contents[0].strip()
 
-                location_tag = c.find("div", class_="location")
-                location = location_tag.get_text(strip=True) if location_tag else ""
+                rocket_tag = title_block.find("span")
+                rocket = rocket_tag.get_text(strip=True) if rocket_tag else payload
+
+                time_tag = c.find("time", class_="launchDateTime")
+                date = time_tag.get_text(strip=True) if time_tag else "TBD"
+
+                location_divs = c.find_all("div", class_="col")
+                location = ""
+                for div in location_divs:
+                    text = div.get_text(strip=True)
+                    if "Launch Center" in text:
+                        location = text
+                        break
 
                 if not any(site in location for site in VALID_SITES):
                     continue
