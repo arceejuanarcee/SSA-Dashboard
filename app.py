@@ -2,13 +2,11 @@ import streamlit as st
 import sys
 import os
 
-# FIX PATH (CRITICAL FOR STREAMLIT CLOUD)
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from src.components.header import render_header
 from src.utils.navigation import init_navigation, navigate
 
-# SAFE IMPORTS
 from src.pages import home
 from src.pages import space_weather
 from src.pages import reentry

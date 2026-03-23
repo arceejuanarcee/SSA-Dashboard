@@ -37,11 +37,9 @@ def fetch_china_launches():
                 else:
                     date = "TBD"
 
-                # ✅ FIX: Correct site extraction
                 site_tag = card.select_one("div.col.h6.mb-0.pt-2")
                 site = site_tag.get_text(strip=True) if site_tag else None
 
-                # Filter by valid sites
                 if site:
                     if not any(valid in site for valid in VALID_SITES):
                         continue
