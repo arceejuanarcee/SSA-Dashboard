@@ -5,6 +5,7 @@ import streamlit.components.v1 as components
 
 from src.services.space_weather_api import get_daily_kp
 from src.services.spacetrack_api import get_active_leo_by_country
+from src.services.launch_scraper import fetch_china_launches
 
 
 def get_base64(path):
@@ -15,55 +16,46 @@ def get_base64(path):
 def tile(title, image_path, page_key, height=220):
     img_b64 = get_base64(image_path)
 
-    html = f"""
-    <!doctype html>
+    components.html(f"""
     <html>
     <head>
-        <meta charset="utf-8">
-        <style>
-            html, body {{
-                margin: 0;
-                padding: 0;
-                background: transparent;
-                overflow: hidden;
-            }}
+    <style>
+        body {{
+            margin:0;
+            padding:0;
+            background:transparent;
+            overflow:hidden;
+        }}
 
-            .tile {{
-                position: relative;
-                width: 100%;
-                height: {height}px;
-                border-radius: 14px;
-                overflow: hidden;
-                cursor: pointer;
-                background-image: url("data:image/jpeg;base64,{img_b64}");
-                background-size: cover;
-                background-position: center;
-                font-family: Arial, sans-serif;
-            }}
+        .tile {{
+            position:relative;
+            width:100%;
+            height:{height}px;
+            border-radius:14px;
+            overflow:hidden;
+            cursor:pointer;
+            background-image:url("data:image/jpeg;base64,{img_b64}");
+            background-size:cover;
+            background-position:center;
+        }}
 
-            .overlay {{
-                position: absolute;
-                inset: 0;
-                background: linear-gradient(
-                    to top,
-                    rgba(0, 0, 0, 0.78) 0%,
-                    rgba(0, 0, 0, 0.30) 55%,
-                    rgba(0, 0, 0, 0.18) 100%
-                );
-            }}
+        .overlay {{
+            position:absolute;
+            inset:0;
+            background:linear-gradient(rgba(0,0,0,0.2), rgba(0,0,0,0.8));
+        }}
 
-            .title {{
-                position: absolute;
-                left: 16px;
-                bottom: 14px;
-                color: white;
-                font-size: 16px;
-                font-weight: 600;
-                line-height: 1.2;
-                text-shadow: 0 1px 2px rgba(0,0,0,0.6);
-            }}
-        </style>
+        .title {{
+            position:absolute;
+            bottom:14px;
+            left:16px;
+            color:white;
+            font-size:16px;
+            font-weight:600;
+        }}
+    </style>
     </head>
+
     <body>
         <div class="tile" onclick="goToPage()">
             <div class="overlay"></div>
@@ -71,38 +63,28 @@ def tile(title, image_path, page_key, height=220):
         </div>
 
         <script>
-            function goToPage() {{
-                try {{
-                    const url = new URL(window.parent.location.href);
-                    url.searchParams.set("page", "{page_key}");
-                    window.parent.location.href = url.toString();
-                }} catch (e) {{
-                    try {{
-                        const url = new URL(window.top.location.href);
-                        url.searchParams.set("page", "{page_key}");
-                        window.top.location.href = url.toString();
-                    }} catch (err) {{}}
-                }}
-            }}
+        function goToPage() {{
+            const url = new URL(window.parent.location.href);
+            url.searchParams.set("page", "{page_key}");
+            window.parent.location.href = url.toString();
+        }}
         </script>
     </body>
     </html>
-    """
-
-    components.html(html, height=height, scrolling=False)
+    """, height=height)
 
 
 def render():
     st.markdown("""
     <style>
     .block-container {
-        padding-top: 0.15rem !important;
+        padding-top: 0.1rem !important;
         padding-bottom: 0rem !important;
     }
 
     h3 {
         margin-top: 0rem !important;
-        margin-bottom: 0.35rem !important;
+        margin-bottom: 0.2rem !important;
         font-size: 18px !important;
         font-weight: 700 !important;
     }
@@ -141,8 +123,8 @@ def render():
                     else:
                         colors.append("red")
 
-                for bar, color in zip(bars, colors):
-                    bar.set_color(color)
+                for bar, c in zip(bars, colors):
+                    bar.set_color(c)
 
                 ax.set_ylabel("Kp Index")
                 ax.set_ylim(0, 9)
@@ -166,26 +148,53 @@ def render():
 
                 plt.tight_layout()
                 st.pyplot(fig, width="stretch")
+
             else:
                 st.warning("No Kp data available.")
 
         except Exception as e:
             st.error(str(e))
 
+        st.markdown("#### Upcoming Launches (China CASC)")
+
+        launches, error = fetch_china_launches()
+
+        if error:
+            st.error(error)
+        elif launches:
+            for l in launches:
+                st.markdown(f"""
+                <div style="
+                    padding:8px;
+                    margin-bottom:6px;
+                    background:#111;
+                    border-radius:8px;
+                    color:white;
+                ">
+                    <b>{l['rocket']}</b><br>
+                    {l['date'] if l['date'] else "TBD"}
+                </div>
+                """, unsafe_allow_html=True)
+        else:
+            st.warning("No upcoming launches")
+
     with col2:
-        st.markdown("<h3>Top Countries by Active LEO Satellites</h3>", unsafe_allow_html=True)
+        st.markdown("<h3>Top 10 Countries by Active LEO Satellites</h3>", unsafe_allow_html=True)
 
         try:
             labels, values, error = get_active_leo_by_country()
 
             if error:
                 st.error(error)
+
             elif values:
                 fig2, ax2 = plt.subplots(figsize=(6, 3))
 
                 ax2.barh(labels, values)
+
                 ax2.set_xlabel("Number of Satellites")
                 ax2.set_xlim(0, max(values) * 1.2)
+
                 ax2.tick_params(axis="x", labelsize=9)
                 ax2.tick_params(axis="y", labelsize=9)
 
@@ -194,13 +203,14 @@ def render():
 
                 plt.tight_layout()
                 st.pyplot(fig2, width="stretch")
+
             else:
                 st.warning("No satellite data available.")
 
         except Exception as e:
             st.error(str(e))
 
-    st.markdown("<div style='margin-top:0.5rem;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='margin-top:0.3rem;'></div>", unsafe_allow_html=True)
 
     t1, t2 = st.columns(2)
 
