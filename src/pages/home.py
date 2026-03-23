@@ -186,7 +186,7 @@ def render():
             st.error(str(e))
 
     with col2:
-        st.markdown("<h3>Top 10 Countries by Active LEO Satellites</h3>", unsafe_allow_html=True)
+        st.markdown("<h3>Countries by Active LEO Satellites</h3>", unsafe_allow_html=True)
 
         try:
             labels, values, error = get_active_leo_by_country()
