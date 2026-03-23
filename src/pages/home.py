@@ -84,7 +84,7 @@ def render():
 
     h3 {
         margin-top: 0rem !important;
-        margin-bottom: 0.2rem !important;
+        margin-bottom: 0.25rem !important;
         font-size: 18px !important;
         font-weight: 700 !important;
     }
@@ -101,6 +101,7 @@ def render():
 
     col1, col2 = st.columns(2)
 
+    # LEFT: GEOMAGNETIC GRAPH + LAUNCHES
     with col1:
         st.markdown("<h3>Geomagnetic Storm Forecast</h3>", unsafe_allow_html=True)
 
@@ -155,31 +156,46 @@ def render():
         except Exception as e:
             st.error(str(e))
 
-        st.markdown("#### Upcoming Launches (China CASC)")
+        st.markdown("<h3>Upcoming Launches (China CASC)</h3>", unsafe_allow_html=True)
 
         launches, error = fetch_china_launches()
 
         if error:
             st.error(error)
+
         elif launches:
-            for l in launches:
-                st.markdown(f"""
-                <div style="
-                    padding:8px;
-                    margin-bottom:6px;
-                    background:#111;
-                    border-radius:8px;
-                    color:white;
-                ">
-                    <b>{l['rocket']}</b><br>
-                    {l['date'] if l['date'] else "TBD"}
-                </div>
-                """, unsafe_allow_html=True)
+            fig3, ax3 = plt.subplots(figsize=(6, 3))
+            ax3.axis("off")
+
+            y_positions = list(range(len(launches)))[::-1]
+
+            for i, launch in enumerate(launches):
+                rocket = launch.get("rocket", "Unknown")
+                date = launch.get("date", "TBD")
+                site = launch.get("site", "Unknown Site")
+
+                text = f"{rocket}\n{date}\n{site}"
+
+                ax3.text(
+                    0.02,
+                    y_positions[i],
+                    text,
+                    fontsize=9,
+                    va="center"
+                )
+
+            ax3.set_xlim(0, 1)
+            ax3.set_ylim(-1, len(launches))
+
+            plt.tight_layout()
+            st.pyplot(fig3, width="stretch")
+
         else:
             st.warning("No upcoming launches")
 
+    # RIGHT: SATELLITES GRAPH
     with col2:
-        st.markdown("<h3>Top 10 Countries by Active LEO Satellites</h3>", unsafe_allow_html=True)
+        st.markdown("<h3>Top Countries by Active LEO Satellites</h3>", unsafe_allow_html=True)
 
         try:
             labels, values, error = get_active_leo_by_country()
