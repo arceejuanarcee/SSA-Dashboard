@@ -214,7 +214,7 @@ def render():
     launch_col1, launch_col2 = st.columns(2)
 
     with launch_col1:
-        st.markdown("<h3>Upcoming Launches (China CASC)</h3>", unsafe_allow_html=True)
+        st.markdown("<h3>Upcoming Launches</h3>", unsafe_allow_html=True)
 
         try:
             launches, error = fetch_china_launches()
